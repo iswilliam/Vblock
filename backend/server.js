@@ -14,7 +14,7 @@ const Assignment = require('./models/Assignment');
 const AuditLog = require('./models/AuditLog');
 
 // Import contract ABI (you'll get this after compilation)
-const contractABI = require('./artifacts/contracts/AssignmentStorage.sol/AssignmentStorage.json').abi;
+const contractABI = require('../artifacts/contracts/AssignmentStorage.sol/AssignmentStorage.json').abi;
 
 const app = express();
 
@@ -38,7 +38,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/educhain'
 .catch(err => console.error('❌ MongoDB connection error:', err));
 
 // Ethereum connection
-const provider = new ethers.providers.JsonRpcProvider(process.env.ETHEREUM_RPC_URL);
+const provider = new ethers.JsonRpcProvider(process.env.ETHEREUM_RPC_URL);
 const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
 const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS, contractABI, wallet);
 
@@ -410,7 +410,7 @@ app.use((error, req, res, next) => {
 });
 
 // Serve frontend
-app.get('*', (req, res) => {
+app.get('/*', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
 
