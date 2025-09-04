@@ -1,0 +1,1522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduChain - Blockchain Assignment Management</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Navigation */
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-link {
+            text-decoration: none;
+            color: #333;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .nav-link:hover {
+            color: #667eea;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        /* Landing Page */
+        .hero {
+            text-align: center;
+            padding: 4rem 0;
+            color: white;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+
+        .features {
+            background: white;
+            padding: 4rem 0;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .feature-card {
+            background: #f8f9ff;
+            padding: 2rem;
+            border-radius: 15px;
+            text-align: center;
+            border: 1px solid #e0e7ff;
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Auth Forms */
+        .auth-container {
+            background: white;
+            max-width: 400px;
+            margin: 2rem auto;
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 1rem;
+            background: white;
+        }
+
+        /* Dashboard */
+        .dashboard {
+            background: white;
+            margin: 2rem auto;
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .dashboard-nav {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .dashboard-btn {
+            padding: 0.75rem 1.5rem;
+            background: #f8f9ff;
+            border: 2px solid #e0e7ff;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #667eea;
+            transition: all 0.3s;
+        }
+
+        .dashboard-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .dashboard-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        /* File Upload */
+        .file-upload {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            background: #f8f9ff;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .file-upload:hover {
+            background: #f0f4ff;
+            transform: scale(1.02);
+        }
+
+        .file-upload.dragover {
+            background: #e0e7ff;
+            border-color: #4f46e5;
+        }
+
+        /* Status Messages */
+        .status-message {
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+            font-weight: 600;
+        }
+
+        .status-success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #10b981;
+        }
+
+        .status-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #ef4444;
+        }
+
+        .status-warning {
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #f59e0b;
+        }
+
+        .status-info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #3b82f6;
+        }
+
+        /* Tables */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .data-table th {
+            background: #667eea;
+            color: white;
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .data-table td {
+            padding: 1rem;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .data-table tr:hover {
+            background: #f8f9ff;
+        }
+
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 20px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80%;
+            overflow-y: auto;
+        }
+
+        /* Wallet Connection */
+        .wallet-status {
+            padding: 1rem;
+            background: #f8f9ff;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .wallet-connected {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .wallet-disconnected {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-menu {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .dashboard-header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .dashboard-nav {
+                flex-wrap: wrap;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .blockchain-tx {
+            background: #f0f9ff;
+            border: 1px solid #0ea5e9;
+            border-radius: 10px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .hash-display {
+            font-family: 'Courier New', monospace;
+            background: #1f2937;
+            color: #10b981;
+            padding: 1rem;
+            border-radius: 8px;
+            word-break: break-all;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-content">
+                <div class="logo">🎓 EduChain</div>
+                <ul class="nav-menu">
+                    <li><a href="#" class="nav-link" onclick="showPage('home')">Home</a></li>
+                    <li><a href="#" class="nav-link" onclick="showPage('about')">About</a></li>
+                    <li><a href="#" class="nav-link" onclick="showPage('contact')">Contact</a></li>
+                    <li><a href="#" class="btn btn-primary" id="signinBtn" onclick="showPage('signin')">Sign In</a></li>
+                    <li><a href="#" class="btn btn-secondary hidden" id="logoutBtn" onclick="logout()">Logout</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Landing Page -->
+    <div id="homePage">
+        <section class="hero">
+            <div class="container">
+                <h1>Secure Assignment Management</h1>
+                <p>Blockchain-powered academic integrity with tamper-proof submissions</p>
+                <a href="#" class="btn btn-primary" onclick="showPage('signin')">Get Started</a>
+            </div>
+        </section>
+
+        <section class="features">
+            <div class="container">
+                <h2 style="text-align: center; margin-bottom: 1rem;">Why Choose EduChain?</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">🔒</div>
+                        <h3>Blockchain Security</h3>
+                        <p>Immutable records ensure assignment integrity and prevent tampering</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">⚡</div>
+                        <h3>Instant Verification</h3>
+                        <p>Real-time hash verification for quick and reliable assignment checks</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">👥</div>
+                        <h3>Role-Based Access</h3>
+                        <p>Secure access control for students, lecturers, and administrators</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- About Page -->
+    <div id="aboutPage" class="hidden">
+        <div class="container">
+            <div class="auth-container" style="max-width: 800px; margin-top: 2rem;">
+                <h2>About EduChain</h2>
+                <p>EduChain is a revolutionary blockchain-based assignment management system that ensures academic integrity through cryptographic verification. Our platform provides a secure, transparent, and tamper-proof environment for educational institutions.</p>
+                
+                <h3 style="margin-top: 2rem;">Key Features:</h3>
+                <ul style="margin: 1rem 0; padding-left: 2rem;">
+                    <li>Blockchain-secured file storage with SHA-256 hashing</li>
+                    <li>MetaMask integration for secure transactions</li>
+                    <li>Role-based access control system</li>
+                    <li>Comprehensive audit trail</li>
+                    <li>Duplicate detection and prevention</li>
+                    <li>Excel export functionality for reports</li>
+                </ul>
+
+                <h3 style="margin-top: 2rem;">How It Works:</h3>
+                <p>Students upload assignments through our secure interface. Each file is hashed using SHA-256 and stored on the blockchain, creating an immutable record. Lecturers can verify submissions by comparing blockchain hashes, ensuring authenticity and preventing plagiarism.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contact Page -->
+    <div id="contactPage" class="hidden">
+        <div class="container">
+            <div class="auth-container">
+                <h2>Contact Us</h2>
+                <form onsubmit="submitContact(event)">
+                    <div class="form-group">
+                        <label for="contactName">Name</label>
+                        <input type="text" id="contactName" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="contactEmail">Email</label>
+                        <input type="email" id="contactEmail" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="contactMessage">Message</label>
+                        <textarea id="contactMessage" class="form-input" rows="5" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Send Message</button>
+                </form>
+                
+                <div style="margin-top: 2rem; text-align: center;">
+                    <p><strong>Support Email:</strong> support@educhain.com</p>
+                    <p><strong>Phone:</strong> +1 (555) 123-4567</p>
+                    <p><strong>Office Hours:</strong> Monday - Friday, 9:00 AM - 6:00 PM</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sign In Page -->
+    <div id="signinPage" class="hidden">
+        <div class="container">
+            <div class="auth-container">
+                <h2>Sign In to EduChain</h2>
+                
+                <!-- Wallet Connection -->
+                <div class="wallet-status" id="walletStatus">
+                    <span>MetaMask: Not Connected</span>
+                    <button class="btn btn-secondary" onclick="connectWallet()" id="walletBtn">Connect Wallet</button>
+                </div>
+
+                <form onsubmit="login(event)">
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="userRole">Role</label>
+                        <select id="userRole" class="form-select" required>
+                            <option value="">Select Role</option>
+                            <option value="student">Student</option>
+                            <option value="lecturer">Lecturer</option>
+                            <option value="admin">Administrator</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Sign In</button>
+                </form>
+
+                <div style="margin-top: 1rem; text-align: center;">
+                    <p><small>Demo Credentials:<br>
+                    Student: student/password123<br>
+                    Lecturer: lecturer/password123<br>
+                    Admin: admin/password123</small></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboardPage" class="hidden">
+        <div class="container">
+            <div class="dashboard">
+                <div class="dashboard-header">
+                    <div>
+                        <h2 id="dashboardTitle">Dashboard</h2>
+                        <p id="dashboardSubtitle">Welcome back!</p>
+                    </div>
+                    <div>
+                        <span id="userInfo"></span>
+                    </div>
+                </div>
+
+                <!-- Dashboard Navigation -->
+                <div class="dashboard-nav" id="dashboardNav">
+                    <!-- Dynamic navigation based on role -->
+                </div>
+
+                <!-- Dashboard Content -->
+                <div id="dashboardContent">
+                    <!-- Dynamic content based on selected section -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <div id="modalContent">
+                <!-- Dynamic modal content -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global Variables
+        let currentUser = null;
+        let walletConnected = false;
+        let userWalletAddress = null;
+        let assignments = [];
+        let users = [];
+        let auditLog = [];
+
+        // Initialize demo data
+        function initializeData() {
+            users = [
+                { id: 1, username: 'student', password: 'password123', role: 'student', name: 'John Student' },
+                { id: 2, username: 'lecturer', password: 'password123', role: 'lecturer', name: 'Dr. Jane Smith' },
+                { id: 3, username: 'admin', password: 'password123', role: 'admin', name: 'Admin User' }
+            ];
+
+            assignments = [
+                {
+                    id: 1,
+                    studentId: 1,
+                    studentName: 'John Student',
+                    title: 'Web Development Assignment',
+                    filename: 'assignment1.pdf',
+                    hash: '5d41402abc4b2a76b9719d911017c592',
+                    blockchainTx: '0x123abc...def456',
+                    uploadDate: new Date().toISOString(),
+                    status: 'submitted',
+                    grade: null
+                }
+            ];
+
+            auditLog = [
+                {
+                    id: 1,
+                    timestamp: new Date().toISOString(),
+                    user: 'John Student',
+                    action: 'Assignment Submitted',
+                    details: 'Web Development Assignment uploaded'
+                }
+            ];
+        }
+
+        // Navigation Functions
+        function showPage(pageId) {
+            const pages = ['homePage', 'aboutPage', 'contactPage', 'signinPage', 'dashboardPage'];
+            pages.forEach(page => {
+                document.getElementById(page).classList.add('hidden');
+            });
+            document.getElementById(pageId + 'Page').classList.remove('hidden');
+        }
+
+        // MetaMask Wallet Functions
+        async function connectWallet() {
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    userWalletAddress = accounts[0];
+                    walletConnected = true;
+                    updateWalletStatus();
+                    showMessage('Wallet connected successfully!', 'success');
+                } catch (error) {
+                    showMessage('Failed to connect wallet: ' + error.message, 'error');
+                }
+            } else {
+                showMessage('MetaMask not detected. Please install MetaMask browser extension.', 'warning');
+                // For demo purposes, simulate wallet connection
+                walletConnected = true;
+                userWalletAddress = '0x' + Math.random().toString(16).substr(2, 40);
+                updateWalletStatus();
+            }
+        }
+
+        function updateWalletStatus() {
+            const walletStatus = document.getElementById('walletStatus');
+            const walletBtn = document.getElementById('walletBtn');
+            
+            if (walletConnected) {
+                walletStatus.className = 'wallet-status wallet-connected';
+                walletStatus.innerHTML = `<span>MetaMask: Connected (${userWalletAddress?.substring(0, 6)}...${userWalletAddress?.substring(38)})</span>`;
+                walletBtn.textContent = 'Connected';
+                walletBtn.disabled = true;
+            } else {
+                walletStatus.className = 'wallet-status wallet-disconnected';
+                walletStatus.innerHTML = '<span>MetaMask: Not Connected</span>';
+                walletBtn.textContent = 'Connect Wallet';
+                walletBtn.disabled = false;
+            }
+        }
+
+        // Authentication Functions
+        function login(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const role = document.getElementById('userRole').value;
+
+            const user = users.find(u => u.username === username && u.password === password && u.role === role);
+            
+            if (user && walletConnected) {
+                currentUser = user;
+                document.getElementById('signinBtn').classList.add('hidden');
+                document.getElementById('logoutBtn').classList.remove('hidden');
+                
+                logAuditEvent(user.name, 'Login', 'User logged into the system');
+                showDashboard();
+                showMessage(`Welcome, ${user.name}!`, 'success');
+            } else if (!walletConnected) {
+                showMessage('Please connect your MetaMask wallet first.', 'warning');
+            } else {
+                showMessage('Invalid credentials. Please try again.', 'error');
+            }
+        }
+
+        function logout() {
+            if (currentUser) {
+                logAuditEvent(currentUser.name, 'Logout', 'User logged out of the system');
+            }
+            currentUser = null;
+            document.getElementById('signinBtn').classList.remove('hidden');
+            document.getElementById('logoutBtn').classList.add('hidden');
+            showPage('home');
+            showMessage('Logged out successfully.', 'info');
+        }
+
+        // Dashboard Functions
+        function showDashboard() {
+            showPage('dashboard');
+            document.getElementById('dashboardTitle').textContent = `${currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1)} Dashboard`;
+            document.getElementById('dashboardSubtitle').textContent = `Welcome back, ${currentUser.name}!`;
+            document.getElementById('userInfo').textContent = `Logged in as: ${currentUser.name} (${currentUser.role})`;
+            
+            setupDashboardNavigation();
+            showDashboardSection('overview');
+        }
+
+        function setupDashboardNavigation() {
+            const nav = document.getElementById('dashboardNav');
+            let navItems = [];
+
+            switch (currentUser.role) {
+                case 'student':
+                    navItems = [
+                        { id: 'overview', label: 'Overview' },
+                        { id: 'submit', label: 'Submit Assignment' },
+                        { id: 'submissions', label: 'My Submissions' }
+                    ];
+                    break;
+                case 'lecturer':
+                    navItems = [
+                        { id: 'overview', label: 'Overview' },
+                        { id: 'verify', label: 'Verify Assignments' },
+                        { id: 'grade', label: 'Grade Submissions' }
+                    ];
+                    break;
+                case 'admin':
+                    navItems = [
+                        { id: 'overview', label: 'Overview' },
+                        { id: 'users', label: 'Manage Users' },
+                        { id: 'assignments', label: 'All Assignments' },
+                        { id: 'audit', label: 'Audit Trail' }
+                    ];
+                    break;
+            }
+
+            nav.innerHTML = navItems.map(item => 
+                `<button class="dashboard-btn" onclick="showDashboardSection('${item.id}')">${item.label}</button>`
+            ).join('');
+        }
+
+        function showDashboardSection(section) {
+            // Update active navigation
+            document.querySelectorAll('.dashboard-btn').forEach(btn => btn.classList.remove('active'));
+            event?.target?.classList.add('active');
+
+            const content = document.getElementById('dashboardContent');
+            
+            switch (section) {
+                case 'overview':
+                    showOverview();
+                    break;
+                case 'submit':
+                    showSubmitAssignment();
+                    break;
+                case 'submissions':
+                    showMySubmissions();
+                    break;
+                case 'verify':
+                    showVerifyAssignments();
+                    break;
+                case 'grade':
+                    showGradeSubmissions();
+                    break;
+                case 'users':
+                    showManageUsers();
+                    break;
+                case 'assignments':
+                    showAllAssignments();
+                    break;
+                case 'audit':
+                    showAuditTrail();
+                    break;
+            }
+        }
+
+        // Dashboard Section Functions
+        function showOverview() {
+            const content = document.getElementById('dashboardContent');
+            let stats = '';
+
+            switch (currentUser.role) {
+                case 'student':
+                    const myAssignments = assignments.filter(a => a.studentId === currentUser.id);
+                    stats = `
+                        <div class="features-grid">
+                            <div class="feature-card">
+                                <div class="feature-icon">📝</div>
+                                <h3>${myAssignments.length}</h3>
+                                <p>Total Submissions</p>
+                            </div>
+                            <div class="feature-card">
+                                <div class="feature-icon">✅</div>
+                                <h3>${myAssignments.filter(a => a.grade).length}</h3>
+                                <p>Graded Assignments</p>
+                            </div>
+                            <div class="feature-card">
+                                <div class="feature-icon">⏳</div>
+                                <h3>${myAssignments.filter(a => !a.grade).length}</h3>
+                                <p>Pending Review</p>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                case 'lecturer':
+                    stats = `
+                        <div class="features-grid">
+                            <div class="feature-card">
+                                <div class="feature-icon">📚</div>
+                                <h3>${assignments.length}</h3>
+                                <p>Total Submissions</p>
+                            </div>
+                            <div class="feature-card">
+                                <div class="feature-icon">✅</div>
+                                <h3>${assignments.filter(a => a.grade).length}</h3>
+                                <p>Graded</p>
+                            </div>
+                            <div class="feature-card">
+                                <div class="feature-icon">⏳</div>
+                                <h3>${assignments.filter(a => !a.grade).length}</h3>
+                                <p>Pending Grading</p>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                case 'admin':
+                    stats = `
+                        <div class="features-grid">
+                            <div class="feature-card">
+                                <div class="feature-icon">👥</div>
+                                <h3>${users.length}</h3>
+                                <p>Total Users</p>
+                            </div>
+                            <div class="feature-card">
+                                <div class="feature-icon">📝</div>
+                                <h3>${assignments.length}</h3>
+                                <p>Total Assignments</p>
+                            </div>
+                            <div class="feature-card">
+                                <div class="feature-icon">🔍</div>
+                                <h3>${auditLog.length}</h3>
+                                <p>Audit Entries</p>
+                            </div>
+                        </div>
+                    `;
+                    break;
+            }
+
+            content.innerHTML = `
+                <h3>Dashboard Overview</h3>
+                ${stats}
+            `;
+        }
+
+        function showSubmitAssignment() {
+            const content = document.getElementById('dashboardContent');
+            content.innerHTML = `
+                <h3>Submit Assignment</h3>
+                <form onsubmit="submitAssignment(event)">
+                    <div class="form-group">
+                        <label for="assignmentTitle">Assignment Title</label>
+                        <input type="text" id="assignmentTitle" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="assignmentFile">Assignment File</label>
+                        <div class="file-upload" onclick="document.getElementById('assignmentFile').click()">
+                            <input type="file" id="assignmentFile" style="display: none" onchange="handleFileSelect(event)" required>
+                            <div id="fileUploadText">
+                                <p>📎 Click to select file or drag and drop</p>
+                                <p><small>Supported formats: PDF, DOC, DOCX, TXT</small></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="filePreview" class="hidden">
+                        <h4>File Preview:</h4>
+                        <div id="fileDetails"></div>
+                        <div id="fileHash" class="hash-display"></div>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Submit to Blockchain</button>
+                </form>
+            `;
+
+            // Add drag and drop functionality
+            const fileUpload = document.querySelector('.file-upload');
+            fileUpload.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                fileUpload.classList.add('dragover');
+            });
+            fileUpload.addEventListener('dragleave', () => {
+                fileUpload.classList.remove('dragover');
+            });
+            fileUpload.addEventListener('drop', (e) => {
+                e.preventDefault();
+                fileUpload.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    document.getElementById('assignmentFile').files = files;
+                    handleFileSelect({ target: { files: files } });
+                }
+            });
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                // Check for duplicate
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const content = e.target.result;
+                    const hash = CryptoJS.SHA256(content).toString();
+                    
+                    // Test Case TC04: Check for duplicate
+                    const existingAssignment = assignments.find(a => a.hash === hash);
+                    if (existingAssignment) {
+                        showMessage('Duplicate file detected! This assignment has already been submitted.', 'error');
+                        document.getElementById('assignmentFile').value = '';
+                        document.getElementById('filePreview').classList.add('hidden');
+                        return;
+                    }
+
+                    document.getElementById('fileUploadText').innerHTML = `
+                        <p>✅ ${file.name} selected</p>
+                        <p><small>Size: ${(file.size / 1024).toFixed(2)} KB</small></p>
+                    `;
+                    
+                    document.getElementById('fileDetails').innerHTML = `
+                        <p><strong>Filename:</strong> ${file.name}</p>
+                        <p><strong>Size:</strong> ${(file.size / 1024).toFixed(2)} KB</p>
+                        <p><strong>Type:</strong> ${file.type}</p>
+                        <p><strong>Last Modified:</strong> ${new Date(file.lastModified).toLocaleString()}</p>
+                    `;
+                    
+                    document.getElementById('fileHash').textContent = `SHA-256 Hash: ${hash}`;
+                    document.getElementById('filePreview').classList.remove('hidden');
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        }
+
+        function submitAssignment(event) {
+            event.preventDefault();
+            
+            const title = document.getElementById('assignmentTitle').value;
+            const fileInput = document.getElementById('assignmentFile');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                showMessage('Please select a file to upload.', 'error');
+                return;
+            }
+
+            // Show loading
+            showMessage('Processing blockchain transaction...', 'info');
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result;
+                const hash = CryptoJS.SHA256(content).toString();
+                
+                // Simulate blockchain transaction
+                setTimeout(() => {
+                    // Test Case TC05: Simulate blockchain connection issues occasionally
+                    if (Math.random() < 0.1) { // 10% chance of failure
+                        showMessage('Blockchain node disconnected. Please retry.', 'error');
+                        return;
+                    }
+
+                    const transactionHash = '0x' + Math.random().toString(16).substr(2, 64);
+                    
+                    const newAssignment = {
+                        id: assignments.length + 1,
+                        studentId: currentUser.id,
+                        studentName: currentUser.name,
+                        title: title,
+                        filename: file.name,
+                        hash: hash,
+                        blockchainTx: transactionHash,
+                        uploadDate: new Date().toISOString(),
+                        status: 'submitted',
+                        grade: null
+                    };
+
+                    assignments.push(newAssignment);
+                    logAuditEvent(currentUser.name, 'Assignment Submitted', `${title} uploaded with hash: ${hash.substring(0, 16)}...`);
+                    
+                    // Test Case TC01: Confirm blockchain transaction
+                    showMessage('✅ Assignment submitted successfully! Transaction confirmed on blockchain.', 'success');
+                    
+                    // Show transaction details
+                    showModal(`
+                        <h3>🎉 Assignment Submitted Successfully!</h3>
+                        <div class="blockchain-tx">
+                            <p><strong>Transaction Hash:</strong></p>
+                            <div class="hash-display">${transactionHash}</div>
+                            <p><strong>File Hash:</strong></p>
+                            <div class="hash-display">${hash}</div>
+                            <p><strong>Block Confirmation:</strong> ✅ Confirmed</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="closeModal(); showDashboardSection('submissions');">View My Submissions</button>
+                    `);
+
+                    // Reset form
+                    event.target.reset();
+                    document.getElementById('filePreview').classList.add('hidden');
+                    document.getElementById('fileUploadText').innerHTML = `
+                        <p>📎 Click to select file or drag and drop</p>
+                        <p><small>Supported formats: PDF, DOC, DOCX, TXT</small></p>
+                    `;
+                }, 2000);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function showMySubmissions() {
+            const content = document.getElementById('dashboardContent');
+            const myAssignments = assignments.filter(a => a.studentId === currentUser.id);
+            
+            content.innerHTML = `
+                <h3>My Submissions</h3>
+                ${myAssignments.length === 0 ? '<p>No submissions yet.</p>' : `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>File</th>
+                            <th>Submit Date</th>
+                            <th>Status</th>
+                            <th>Grade</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${myAssignments.map(assignment => `
+                            <tr>
+                                <td>${assignment.title}</td>
+                                <td>${assignment.filename}</td>
+                                <td>${new Date(assignment.uploadDate).toLocaleDateString()}</td>
+                                <td><span class="status-${assignment.status}">${assignment.status}</span></td>
+                                <td>${assignment.grade || 'Pending'}</td>
+                                <td>
+                                    <button class="btn btn-secondary" onclick="viewAssignmentDetails(${assignment.id})">Details</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+                `}
+            `;
+        }
+
+        function showVerifyAssignments() {
+            const content = document.getElementById('dashboardContent');
+            content.innerHTML = `
+                <h3>Verify Assignments</h3>
+                <p>Compare blockchain hashes with stored records to verify assignment integrity.</p>
+                
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Title</th>
+                            <th>Submit Date</th>
+                            <th>Blockchain Hash</th>
+                            <th>Verification</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${assignments.map(assignment => `
+                            <tr>
+                                <td>${assignment.studentName}</td>
+                                <td>${assignment.title}</td>
+                                <td>${new Date(assignment.uploadDate).toLocaleDateString()}</td>
+                                <td>
+                                    <div class="hash-display" style="font-size: 0.75rem;">
+                                        ${assignment.hash.substring(0, 20)}...
+                                    </div>
+                                </td>
+                                <td>
+                                    <button class="btn btn-primary" onclick="verifyAssignment(${assignment.id})">
+                                        🔍 Verify
+                                    </button>
+                                </td>
+                                <td>
+                                    <button class="btn btn-secondary" onclick="viewAssignmentDetails(${assignment.id})">Details</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function verifyAssignment(assignmentId) {
+            const assignment = assignments.find(a => a.id === assignmentId);
+            if (!assignment) return;
+
+            // Test Case TC03: Check unauthorized access
+            if (currentUser.role !== 'lecturer' && currentUser.role !== 'admin') {
+                showMessage('Access denied. Only lecturers can verify assignments.', 'error');
+                return;
+            }
+
+            showMessage('Retrieving hash from blockchain...', 'info');
+            
+            setTimeout(() => {
+                // Test Case TC02: Simulate hash verification
+                const blockchainHash = assignment.hash; // In real scenario, this would be fetched from blockchain
+                const storedHash = assignment.hash;
+                
+                const isMatch = blockchainHash === storedHash;
+                
+                logAuditEvent(currentUser.name, 'Assignment Verified', `Verification ${isMatch ? 'successful' : 'failed'} for ${assignment.title}`);
+                
+                showModal(`
+                    <h3>🔍 Assignment Verification Result</h3>
+                    <div style="margin: 1rem 0;">
+                        <p><strong>Assignment:</strong> ${assignment.title}</p>
+                        <p><strong>Student:</strong> ${assignment.studentName}</p>
+                        <p><strong>Verification Status:</strong> ${isMatch ? '✅ VERIFIED' : '❌ FAILED'}</p>
+                    </div>
+                    
+                    <div class="blockchain-tx">
+                        <p><strong>Blockchain Hash:</strong></p>
+                        <div class="hash-display">${blockchainHash}</div>
+                        <p><strong>Stored Hash:</strong></p>
+                        <div class="hash-display">${storedHash}</div>
+                        <p><strong>Match:</strong> ${isMatch ? '✅ Hashes match - Assignment is authentic' : '❌ Hash mismatch - Possible tampering detected'}</p>
+                    </div>
+                    
+                    <div style="margin-top: 1rem;">
+                        <button class="btn btn-primary" onclick="closeModal()">Close</button>
+                        ${isMatch ? `<button class="btn btn-secondary" onclick="closeModal(); gradeAssignment(${assignment.id})">Grade Assignment</button>` : ''}
+                    </div>
+                `);
+                
+                showMessage(isMatch ? 'Assignment verification successful!' : 'Warning: Assignment verification failed!', isMatch ? 'success' : 'error');
+            }, 1500);
+        }
+
+        function showGradeSubmissions() {
+            const content = document.getElementById('dashboardContent');
+            const ungraded = assignments.filter(a => !a.grade);
+            
+            content.innerHTML = `
+                <h3>Grade Submissions</h3>
+                ${ungraded.length === 0 ? '<p>No submissions pending grading.</p>' : `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Title</th>
+                            <th>Submit Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${ungraded.map(assignment => `
+                            <tr>
+                                <td>${assignment.studentName}</td>
+                                <td>${assignment.title}</td>
+                                <td>${new Date(assignment.uploadDate).toLocaleDateString()}</td>
+                                <td>${assignment.status}</td>
+                                <td>
+                                    <button class="btn btn-primary" onclick="gradeAssignment(${assignment.id})">Grade</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+                `}
+            `;
+        }
+
+        function gradeAssignment(assignmentId) {
+            const assignment = assignments.find(a => a.id === assignmentId);
+            if (!assignment) return;
+
+            // Test Case TC03: Check unauthorized access
+            if (currentUser.role !== 'lecturer' && currentUser.role !== 'admin') {
+                showMessage('Access denied. Only lecturers can grade assignments.', 'error');
+                return;
+            }
+
+            showModal(`
+                <h3>Grade Assignment</h3>
+                <div style="margin: 1rem 0;">
+                    <p><strong>Student:</strong> ${assignment.studentName}</p>
+                    <p><strong>Assignment:</strong> ${assignment.title}</p>
+                    <p><strong>File:</strong> ${assignment.filename}</p>
+                </div>
+                
+                <form onsubmit="submitGrade(event, ${assignment.id})">
+                    <div class="form-group">
+                        <label for="grade">Grade (0-100)</label>
+                        <input type="number" id="grade" class="form-input" min="0" max="100" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="feedback">Feedback</label>
+                        <textarea id="feedback" class="form-input" rows="4"></textarea>
+                    </div>
+                    <div style="display: flex; gap: 1rem;">
+                        <button type="submit" class="btn btn-primary">Submit Grade</button>
+                        <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                    </div>
+                </form>
+            `);
+        }
+
+        function submitGrade(event, assignmentId) {
+            event.preventDefault();
+            const grade = document.getElementById('grade').value;
+            const feedback = document.getElementById('feedback').value;
+            
+            const assignment = assignments.find(a => a.id === assignmentId);
+            assignment.grade = `${grade}%`;
+            assignment.feedback = feedback;
+            assignment.status = 'graded';
+            assignment.gradedBy = currentUser.name;
+            assignment.gradeDate = new Date().toISOString();
+            
+            logAuditEvent(currentUser.name, 'Assignment Graded', `${assignment.title} graded: ${grade}%`);
+            
+            closeModal();
+            showMessage('Grade submitted successfully!', 'success');
+            showDashboardSection('grade');
+        }
+
+        function showManageUsers() {
+            const content = document.getElementById('dashboardContent');
+            content.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h3>Manage Users</h3>
+                    <button class="btn btn-primary" onclick="addUser()">Add User</button>
+                </div>
+                
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Username</th>
+                            <th>Role</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${users.map(user => `
+                            <tr>
+                                <td>${user.id}</td>
+                                <td>${user.name}</td>
+                                <td>${user.username}</td>
+                                <td>${user.role}</td>
+                                <td>
+                                    <button class="btn btn-secondary" onclick="editUser(${user.id})">Edit</button>
+                                    ${user.id !== currentUser.id ? `<button class="btn" style="background: #ef4444; color: white;" onclick="deleteUser(${user.id})">Delete</button>` : ''}
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function showAllAssignments() {
+            const content = document.getElementById('dashboardContent');
+            content.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h3>All Assignments</h3>
+                    <div>
+                        <input type="text" id="searchAssignments" class="form-input" placeholder="Search assignments..." onkeyup="searchAssignments()" style="margin-right: 1rem;">
+                        <button class="btn btn-primary" onclick="exportAssignments()">Export Excel</button>
+                    </div>
+                </div>
+                
+                <table class="data-table" id="assignmentsTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Student</th>
+                            <th>Title</th>
+                            <th>File</th>
+                            <th>Date</th>
+                            <th>Grade</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${assignments.map(assignment => `
+                            <tr>
+                                <td>${assignment.id}</td>
+                                <td>${assignment.studentName}</td>
+                                <td>${assignment.title}</td>
+                                <td>${assignment.filename}</td>
+                                <td>${new Date(assignment.uploadDate).toLocaleDateString()}</td>
+                                <td>${assignment.grade || 'Pending'}</td>
+                                <td>${assignment.status}</td>
+                                <td>
+                                    <button class="btn btn-secondary" onclick="viewAssignmentDetails(${assignment.id})">Details</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function searchAssignments() {
+            const searchTerm = document.getElementById('searchAssignments').value.toLowerCase();
+            const table = document.getElementById('assignmentsTable');
+            const rows = table.querySelectorAll('tbody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        }
+
+        function exportAssignments() {
+            const data = assignments.map(a => ({
+                'ID': a.id,
+                'Student': a.studentName,
+                'Title': a.title,
+                'Filename': a.filename,
+                'Upload Date': new Date(a.uploadDate).toLocaleDateString(),
+                'Grade': a.grade || 'Pending',
+                'Status': a.status,
+                'Hash': a.hash,
+                'Blockchain TX': a.blockchainTx
+            }));
+            
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Assignments");
+            XLSX.writeFile(wb, "assignments_report.xlsx");
+            
+            logAuditEvent(currentUser.name, 'Data Export', 'Assignments exported to Excel');
+            showMessage('Assignments exported successfully!', 'success');
+        }
+
+        function showAuditTrail() {
+            const content = document.getElementById('dashboardContent');
+            content.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h3>Audit Trail</h3>
+                    <button class="btn btn-primary" onclick="exportAuditTrail()">Export Excel</button>
+                </div>
+                
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>User</th>
+                            <th>Action</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${auditLog.slice().reverse().map(entry => `
+                            <tr>
+                                <td>${new Date(entry.timestamp).toLocaleString()}</td>
+                                <td>${entry.user}</td>
+                                <td>${entry.action}</td>
+                                <td>${entry.details}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function exportAuditTrail() {
+            const data = auditLog.map(entry => ({
+                'Timestamp': new Date(entry.timestamp).toLocaleString(),
+                'User': entry.user,
+                'Action': entry.action,
+                'Details': entry.details
+            }));
+            
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Audit Trail");
+            XLSX.writeFile(wb, "audit_trail.xlsx");
+            
+            logAuditEvent(currentUser.name, 'Audit Export', 'Audit trail exported to Excel');
+            showMessage('Audit trail exported successfully!', 'success');
+        }
+
+        function viewAssignmentDetails(assignmentId) {
+            const assignment = assignments.find(a => a.id === assignmentId);
+            if (!assignment) return;
+
+            showModal(`
+                <h3>📄 Assignment Details</h3>
+                <div style="margin: 1rem 0;">
+                    <p><strong>Title:</strong> ${assignment.title}</p>
+                    <p><strong>Student:</strong> ${assignment.studentName}</p>
+                    <p><strong>Filename:</strong> ${assignment.filename}</p>
+                    <p><strong>Upload Date:</strong> ${new Date(assignment.uploadDate).toLocaleString()}</p>
+                    <p><strong>Status:</strong> ${assignment.status}</p>
+                    <p><strong>Grade:</strong> ${assignment.grade || 'Not graded yet'}</p>
+                    ${assignment.feedback ? `<p><strong>Feedback:</strong> ${assignment.feedback}</p>` : ''}
+                </div>
+                
+                <div class="blockchain-tx">
+                    <p><strong>File Hash (SHA-256):</strong></p>
+                    <div class="hash-display">${assignment.hash}</div>
+                    <p><strong>Blockchain Transaction:</strong></p>
+                    <div class="hash-display">${assignment.blockchainTx}</div>
+                </div>
+                
+                <div style="margin-top: 1rem;">
+                    <button class="btn btn-primary" onclick="closeModal()">Close</button>
+                    ${(currentUser.role === 'lecturer' || currentUser.role === 'admin') && !assignment.grade ? 
+                        `<button class="btn btn-secondary" onclick="closeModal(); gradeAssignment(${assignment.id})">Grade</button>` : ''}
+                </div>
+            `);
+        }
+
+        // Utility Functions
+        function showMessage(message, type) {
+            const existingMessage = document.querySelector('.status-message');
+            if (existingMessage) {
+                existingMessage.remove();
+            }
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `status-message status-${type}`;
+            messageDiv.textContent = message;
+            
+            document.body.appendChild(messageDiv);
+            
+            setTimeout(() => {
+                messageDiv.remove();
+            }, 5000);
+        }
+
+        function showModal(content) {
+            document.getElementById('modalContent').innerHTML = content;
+            document.getElementById('modal').classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('show');
+        }
+
+        function logAuditEvent(user, action, details) {
+            auditLog.push({
+                id: auditLog.length + 1,
+                timestamp: new Date().toISOString(),
+                user: user,
+                action: action,
+                details: details
+            });
+        }
+
+        function submitContact(event) {
+            event.preventDefault();
+            showMessage('Thank you for your message! We will get back to you soon.', 'success');
+            event.target.reset();
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('modal').addEventListener('click', (e) => {
+            if (e.target.id === 'modal') {
+                closeModal();
+            }
+        });
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeData();
+            updateWalletStatus();
+            showPage('home');
+        });
+    </script>
+</body>
+</html>
