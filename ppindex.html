@@ -663,42 +663,42 @@
         }
 
         // MetaMask Wallet Functions
-        async function connectWallet() {
-            if (typeof window.ethereum !== 'undefined') {
-                try {
-                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-                    userWalletAddress = accounts[0];
-                    walletConnected = true;
-                    updateWalletStatus();
-                    showMessage('Wallet connected successfully!', 'success');
-                } catch (error) {
-                    showMessage('Failed to connect wallet: ' + error.message, 'error');
-                }
-            } else {
-                showMessage('MetaMask not detected. Please install MetaMask browser extension.', 'warning');
-                // For demo purposes, simulate wallet connection
-                walletConnected = true;
-                userWalletAddress = '0x' + Math.random().toString(16).substr(2, 40);
-                updateWalletStatus();
-            }
-        }
+        // async function connectWallet() {
+        //     if (typeof window.ethereum !== 'undefined') {
+        //         try {
+        //             const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        //             userWalletAddress = accounts[0];
+        //             walletConnected = true;
+        //             updateWalletStatus();
+        //             showMessage('Wallet connected successfully!', 'success');
+        //         } catch (error) {
+        //             showMessage('Failed to connect wallet: ' + error.message, 'error');
+        //         }
+        //     } else {
+        //         showMessage('MetaMask not detected. Please install MetaMask browser extension.', 'warning');
+        //         // For demo purposes, simulate wallet connection
+        //         walletConnected = true;
+        //         userWalletAddress = '0x' + Math.random().toString(16).substr(2, 40);
+        //         updateWalletStatus();
+        //     }
+        // }
 
-        function updateWalletStatus() {
-            const walletStatus = document.getElementById('walletStatus');
-            const walletBtn = document.getElementById('walletBtn');
+        // function updateWalletStatus() {
+        //     const walletStatus = document.getElementById('walletStatus');
+        //     const walletBtn = document.getElementById('walletBtn');
             
-            if (walletConnected) {
-                walletStatus.className = 'wallet-status wallet-connected';
-                walletStatus.innerHTML = `<span>MetaMask: Connected (${userWalletAddress?.substring(0, 6)}...${userWalletAddress?.substring(38)})</span>`;
-                walletBtn.textContent = 'Connected';
-                walletBtn.disabled = true;
-            } else {
-                walletStatus.className = 'wallet-status wallet-disconnected';
-                walletStatus.innerHTML = '<span>MetaMask: Not Connected</span>';
-                walletBtn.textContent = 'Connect Wallet';
-                walletBtn.disabled = false;
-            }
-        }
+        //     if (walletConnected) {
+        //         walletStatus.className = 'wallet-status wallet-connected';
+        //         walletStatus.innerHTML = `<span>MetaMask: Connected (${userWalletAddress?.substring(0, 6)}...${userWalletAddress?.substring(38)})</span>`;
+        //         walletBtn.textContent = 'Connected';
+        //         walletBtn.disabled = true;
+        //     } else {
+        //         walletStatus.className = 'wallet-status wallet-disconnected';
+        //         walletStatus.innerHTML = '<span>MetaMask: Not Connected</span>';
+        //         walletBtn.textContent = 'Connect Wallet';
+        //         walletBtn.disabled = false;
+        //     }
+        // }
 
         // Authentication Functions
         function login(event) {
@@ -710,7 +710,7 @@
 
             const user = users.find(u => u.username === username && u.password === password && u.role === role);
             
-            if (user && walletConnected) {
+            if (user /* && walletConnected */) {
                 currentUser = user;
                 document.getElementById('signinBtn').classList.add('hidden');
                 document.getElementById('logoutBtn').classList.remove('hidden');
@@ -718,9 +718,9 @@
                 logAuditEvent(user.name, 'Login', 'User logged into the system');
                 showDashboard();
                 showMessage(`Welcome, ${user.name}!`, 'success');
-            } else if (!walletConnected) {
+            } else  /*if (!walletConnected) {
                 showMessage('Please connect your MetaMask wallet first.', 'warning');
-            } else {
+            } else */ {
                 showMessage('Invalid credentials. Please try again.', 'error');
             }
         }
