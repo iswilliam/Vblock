@@ -356,11 +356,11 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     // Simple password check
-    // console.log('Password check:', password, '===', user.password, '?', password === user.password);
+    console.log('Password check:', password, '===', user.password, '?', password === user.password);
     
-    // if (password !== user.password) {
-    //   return res.status(401).json({ success: false, error: 'Invalid credentials' });
-    // }
+    if (password !== user.password) {
+      return res.status(401).json({ success: false, error: 'Invalid credentials' });
+    }
 
     // Update wallet address if provided
     if (walletAddress && walletAddress !== user.walletAddress) {
