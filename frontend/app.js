@@ -54,6 +54,248 @@ function initializeData() {
     ];
 }
 
+// Add this to your app.js or main JavaScript file
+
+// Show Submit Assignment Form
+function submitAssignment() {
+    const content = document.getElementById('content');
+    content.innerHTML = `
+        <div class="container">
+            <h2>Submit Assignment</h2>
+            <form id="assignmentForm" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="assignmentTitle">Assignment Title:</label>
+                    <input type="text" id="assignmentTitle" name="title" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="courseCode">Course Code:</label>
+                    <input type="text" id="courseCode" name="courseCode" required placeholder="e.g., CS101">
+                </div>
+                
+                <div class="form-group">
+                    <label for="description">Description:</label>
+                    <textarea id="description" name="description" rows="4" placeholder="Brief description of your assignment"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="assignmentFile">Upload Assignment File:</label>
+                    <input type="file" id="assignmentFile" name="assignmentFile" accept=".pdf,.doc,.docx,.txt,.zip" required>
+                    <small>Supported formats: PDF, DOC, DOCX, TXT, ZIP</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="dueDate">Due Date:</label>
+                    <input type="datetime-local" id="dueDate" name="dueDate" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Submit Assignment</button>
+                <button type="button" class="btn btn-secondary" onclick="showDashboard()">Cancel</button>
+            </form>
+        </div>
+    `;
+    
+    // Add form submission handler
+    document.getElementById('assignmentForm').addEventListener('submit', handleAssignmentSubmission);
+}
+
+// Handle Assignment Submission
+async function handleAssignmentSubmission(e) {
+    e.preventDefault();
+    
+    const formData = new FormData();
+    const form = e.target;
+    
+    // Get form data
+    formData.append('title', form.title.value);
+    formData.append('courseCode', form.courseCode.value);
+    formData.append('description', form.description.value);
+    formData.append('dueDate', form.dueDate.value);
+    formData.append('assignmentFile', form.assignmentFile.files[0]);
+    formData.append('studentId', currentUser.id);
+    formData.append('studentName', currentUser.name);
+    
+    try {
+        const response = await fetch('/api/assignments/submit', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('Assignment submitted successfully!');
+            showMySubmissions(); // Redirect to submissions view
+        } else {
+            alert('Error: ' + result.error);
+        }
+    } catch (error) {
+        console.error('Submission error:', error);
+        alert('Failed to submit assignment. Please try again.');
+    }
+}
+
+// Show My Submissions
+async function showMySubmissions() {
+    const content = document.getElementById('content');
+    content.innerHTML = '<div class="loading">Loading your submissions...</div>';
+    
+    try {
+        const response = await fetch(`/api/assignments/student/${currentUser.id}`);
+        const result = await response.json();
+        
+        if (result.success) {
+            displaySubmissions(result.submissions);
+        } else {
+            content.innerHTML = `<div class="error">Error loading submissions: ${result.error}</div>`;
+        }
+    } catch (error) {
+        console.error('Error fetching submissions:', error);
+        content.innerHTML = '<div class="error">Failed to load submissions. Please try again.</div>';
+    }
+}
+
+// Display Submissions
+function displaySubmissions(submissions) {
+    const content = document.getElementById('content');
+    
+    if (submissions.length === 0) {
+        content.innerHTML = `
+            <div class="container">
+                <h2>My Submissions</h2>
+                <div class="no-submissions">
+                    <p>You haven't submitted any assignments yet.</p>
+                    <button class="btn btn-primary" onclick="submitAssignment()">Submit Your First Assignment</button>
+                </div>
+            </div>
+        `;
+        return;
+    }
+    
+    let submissionsHTML = `
+        <div class="container">
+            <h2>My Submissions</h2>
+            <div class="submissions-grid">
+    `;
+    
+    submissions.forEach(submission => {
+        const statusClass = getStatusClass(submission.status);
+        const submissionDate = new Date(submission.submittedAt).toLocaleDateString();
+        const dueDate = new Date(submission.dueDate).toLocaleDateString();
+        
+        submissionsHTML += `
+            <div class="submission-card">
+                <div class="submission-header">
+                    <h3>${submission.title}</h3>
+                    <span class="status ${statusClass}">${submission.status}</span>
+                </div>
+                <div class="submission-details">
+                    <p><strong>Course:</strong> ${submission.courseCode}</p>
+                    <p><strong>Submitted:</strong> ${submissionDate}</p>
+                    <p><strong>Due Date:</strong> ${dueDate}</p>
+                    ${submission.grade ? `<p><strong>Grade:</strong> ${submission.grade}</p>` : ''}
+                    ${submission.feedback ? `<p><strong>Feedback:</strong> ${submission.feedback}</p>` : ''}
+                </div>
+                <div class="submission-actions">
+                    <button class="btn btn-sm" onclick="viewSubmission('${submission._id}')">View Details</button>
+                    ${submission.fileName ? `<button class="btn btn-sm" onclick="downloadFile('${submission._id}')">Download</button>` : ''}
+                </div>
+            </div>
+        `;
+    });
+    
+    submissionsHTML += `
+            </div>
+            <button class="btn btn-primary" onclick="submitAssignment()">Submit New Assignment</button>
+        </div>
+    `;
+    
+    content.innerHTML = submissionsHTML;
+}
+
+// Helper function to get status CSS class
+function getStatusClass(status) {
+    switch(status.toLowerCase()) {
+        case 'submitted': return 'status-submitted';
+        case 'graded': return 'status-graded';
+        case 'pending': return 'status-pending';
+        case 'late': return 'status-late';
+        default: return 'status-default';
+    }
+}
+
+// View individual submission details
+async function viewSubmission(submissionId) {
+    try {
+        const response = await fetch(`/api/assignments/submission/${submissionId}`);
+        const result = await response.json();
+        
+        if (result.success) {
+            const submission = result.submission;
+            const content = document.getElementById('content');
+            
+            content.innerHTML = `
+                <div class="container">
+                    <h2>Submission Details</h2>
+                    <div class="submission-detail">
+                        <h3>${submission.title}</h3>
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <label>Course Code:</label>
+                                <span>${submission.courseCode}</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Status:</label>
+                                <span class="status ${getStatusClass(submission.status)}">${submission.status}</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Submitted:</label>
+                                <span>${new Date(submission.submittedAt).toLocaleString()}</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Due Date:</label>
+                                <span>${new Date(submission.dueDate).toLocaleString()}</span>
+                            </div>
+                            ${submission.grade ? `
+                            <div class="detail-item">
+                                <label>Grade:</label>
+                                <span class="grade">${submission.grade}</span>
+                            </div>
+                            ` : ''}
+                            ${submission.description ? `
+                            <div class="detail-item full-width">
+                                <label>Description:</label>
+                                <p>${submission.description}</p>
+                            </div>
+                            ` : ''}
+                            ${submission.feedback ? `
+                            <div class="detail-item full-width">
+                                <label>Lecturer Feedback:</label>
+                                <p class="feedback">${submission.feedback}</p>
+                            </div>
+                            ` : ''}
+                        </div>
+                        <div class="actions">
+                            ${submission.fileName ? `<button class="btn btn-primary" onclick="downloadFile('${submission._id}')">Download File</button>` : ''}
+                            <button class="btn btn-secondary" onclick="showMySubmissions()">Back to Submissions</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else {
+            alert('Error loading submission details: ' + result.error);
+        }
+    } catch (error) {
+        console.error('Error fetching submission details:', error);
+        alert('Failed to load submission details.');
+    }
+}
+
+// Download submission file
+function downloadFile(submissionId) {
+    window.open(`/api/assignments/download/${submissionId}`, '_blank');
+}
+
 // API helper function
 async function apiCall(endpoint, options = {}) {
     try {

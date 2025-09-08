@@ -72,6 +72,271 @@ app.get('/api/clear-and-seed', async (req, res) => {
   }
 });
 
+// Add these routes to your server.js file
+// Make sure to install required packages: npm install multer path
+
+const multer = require('multer');
+const fs = require('fs');
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadPath = path.join(__dirname, 'uploads', 'assignments');
+    // Create directory if it doesn't exist
+    fs.mkdirSync(uploadPath, { recursive: true });
+    cb(null, uploadPath);
+  },
+  filename: function (req, file, cb) {
+    // Create unique filename
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit
+  },
+  fileFilter: function (req, file, cb) {
+    // Check file type
+    const allowedTypes = /pdf|doc|docx|txt|zip/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb('Error: Only PDF, DOC, DOCX, TXT, and ZIP files are allowed!');
+    }
+  }
+});
+
+// Assignment Schema (add this to your models)
+const assignmentSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  courseCode: { type: String, required: true },
+  description: { type: String },
+  studentId: { type: String, required: true },
+  studentName: { type: String, required: true },
+  fileName: { type: String },
+  filePath: { type: String },
+  originalName: { type: String },
+  dueDate: { type: Date, required: true },
+  submittedAt: { type: Date, default: Date.now },
+  status: { type: String, enum: ['submitted', 'graded', 'pending', 'late'], default: 'submitted' },
+  grade: { type: String },
+  feedback: { type: String },
+  gradedBy: { type: String },
+  gradedAt: { type: Date }
+});
+
+const Assignment = mongoose.model('Assignment', assignmentSchema);
+
+// ROUTES
+
+// Submit Assignment
+app.post('/api/assignments/submit', upload.single('assignmentFile'), async (req, res) => {
+  try {
+    const { title, courseCode, description, studentId, studentName, dueDate } = req.body;
+    
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'No file uploaded' });
+    }
+    
+    // Check if assignment is late
+    const due = new Date(dueDate);
+    const now = new Date();
+    const status = now > due ? 'late' : 'submitted';
+    
+    const assignment = new Assignment({
+      title,
+      courseCode,
+      description,
+      studentId,
+      studentName,
+      fileName: req.file.filename,
+      filePath: req.file.path,
+      originalName: req.file.originalname,
+      dueDate: due,
+      status
+    });
+    
+    const savedAssignment = await assignment.save();
+    
+    res.json({
+      success: true,
+      message: 'Assignment submitted successfully',
+      assignment: {
+        id: savedAssignment._id,
+        title: savedAssignment.title,
+        status: savedAssignment.status,
+        submittedAt: savedAssignment.submittedAt
+      }
+    });
+    
+  } catch (error) {
+    console.error('Assignment submission error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to submit assignment'
+    });
+  }
+});
+
+// Get student's submissions
+app.get('/api/assignments/student/:studentId', async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    
+    const submissions = await Assignment.find({ studentId })
+      .sort({ submittedAt: -1 }) // Most recent first
+      .select('-filePath'); // Don't send file path for security
+    
+    res.json({
+      success: true,
+      submissions
+    });
+    
+  } catch (error) {
+    console.error('Error fetching submissions:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch submissions'
+    });
+  }
+});
+
+// Get specific submission details
+app.get('/api/assignments/submission/:submissionId', async (req, res) => {
+  try {
+    const { submissionId } = req.params;
+    
+    const submission = await Assignment.findById(submissionId)
+      .select('-filePath'); // Don't send file path for security
+    
+    if (!submission) {
+      return res.status(404).json({
+        success: false,
+        error: 'Submission not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      submission
+    });
+    
+  } catch (error) {
+    console.error('Error fetching submission:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch submission details'
+    });
+  }
+});
+
+// Download assignment file
+app.get('/api/assignments/download/:submissionId', async (req, res) => {
+  try {
+    const { submissionId } = req.params;
+    
+    const submission = await Assignment.findById(submissionId);
+    
+    if (!submission) {
+      return res.status(404).json({
+        success: false,
+        error: 'Submission not found'
+      });
+    }
+    
+    const filePath = submission.filePath;
+    
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({
+        success: false,
+        error: 'File not found'
+      });
+    }
+    
+    // Set appropriate headers
+    res.setHeader('Content-Disposition', `attachment; filename="${submission.originalName}"`);
+    res.setHeader('Content-Type', 'application/octet-stream');
+    
+    // Send file
+    res.sendFile(path.resolve(filePath));
+    
+  } catch (error) {
+    console.error('Download error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to download file'
+    });
+  }
+});
+
+// Get all assignments (for lecturers/admin)
+app.get('/api/assignments/all', async (req, res) => {
+  try {
+    const assignments = await Assignment.find({})
+      .sort({ submittedAt: -1 })
+      .select('-filePath');
+    
+    res.json({
+      success: true,
+      assignments
+    });
+    
+  } catch (error) {
+    console.error('Error fetching all assignments:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch assignments'
+    });
+  }
+});
+
+// Grade assignment (for lecturers)
+app.put('/api/assignments/grade/:submissionId', async (req, res) => {
+  try {
+    const { submissionId } = req.params;
+    const { grade, feedback, gradedBy } = req.body;
+    
+    const updatedAssignment = await Assignment.findByIdAndUpdate(
+      submissionId,
+      {
+        grade,
+        feedback,
+        gradedBy,
+        gradedAt: new Date(),
+        status: 'graded'
+      },
+      { new: true }
+    ).select('-filePath');
+    
+    if (!updatedAssignment) {
+      return res.status(404).json({
+        success: false,
+        error: 'Assignment not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Assignment graded successfully',
+      assignment: updatedAssignment
+    });
+    
+  } catch (error) {
+    console.error('Grading error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to grade assignment'
+    });
+  }
+});
+
 // Replace your User Schema in server.js with this simpler version
 
 // User Schema (without bcrypt complexity)
@@ -94,23 +359,6 @@ userSchema.methods.comparePassword = function(candidatePassword) {
 const User = mongoose.model('User', userSchema);
 
 
-// Assignment Schema
-const assignmentSchema = new mongoose.Schema({
-  student: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  studentName: { type: String, required: true },
-  title: { type: String, required: true },
-  filename: { type: String, required: true },
-  fileHash: { type: String, required: true },
-  blockchainTx: { type: String, required: true },
-  uploadDate: { type: Date, default: Date.now },
-  status: { type: String, default: 'submitted' },
-  grade: { type: String },
-  feedback: { type: String },
-  gradedBy: { type: String },
-  gradeDate: { type: Date }
-});
-
-const Assignment = mongoose.model('Assignment', assignmentSchema);
 
 // Audit Log Schema
 const auditLogSchema = new mongoose.Schema({
