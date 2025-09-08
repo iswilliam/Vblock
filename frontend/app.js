@@ -1,6 +1,4 @@
-
-// NEW CODE
-
+// EduChain Assignment Management System - Fixed app.js
 
 document.addEventListener('DOMContentLoaded', function() {
     initializeData();
@@ -54,270 +52,6 @@ function initializeData() {
     ];
 }
 
-// Add this to your app.js or main JavaScript file
-
-// Show Submit Assignment Form
-function submitAssignment() {
-    const content = document.getElementById('content');
-    content.innerHTML = `
-        <div class="container">
-            <h2>Submit Assignment</h2>
-            <form id="assignmentForm" enctype="multipart/form-data">
-                <div class="form-group">
-                    <label for="assignmentTitle">Assignment Title:</label>
-                    <input type="text" id="assignmentTitle" name="title" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="courseCode">Course Code:</label>
-                    <input type="text" id="courseCode" name="courseCode" required placeholder="e.g., CS101">
-                </div>
-                
-                <div class="form-group">
-                    <label for="description">Description:</label>
-                    <textarea id="description" name="description" rows="4" placeholder="Brief description of your assignment"></textarea>
-                </div>
-                
-                <div class="form-group">
-                    <label for="assignmentFile">Upload Assignment File:</label>
-                    <input type="file" id="assignmentFile" name="assignmentFile" accept=".pdf,.doc,.docx,.txt,.zip" required>
-                    <small>Supported formats: PDF, DOC, DOCX, TXT, ZIP</small>
-                </div>
-                
-                <div class="form-group">
-                    <label for="dueDate">Due Date:</label>
-                    <input type="datetime-local" id="dueDate" name="dueDate" required>
-                </div>
-                
-                <button type="submit" class="btn btn-primary">Submit Assignment</button>
-                <button type="button" class="btn btn-secondary" onclick="showDashboard()">Cancel</button>
-            </form>
-        </div>
-    `;
-    
-    // Add form submission handler
-    document.getElementById('assignmentForm').addEventListener('submit', handleAssignmentSubmission);
-}
-
-// Handle Assignment Submission
-async function handleAssignmentSubmission(e) {
-    e.preventDefault();
-    
-    const formData = new FormData();
-    const form = e.target;
-    
-    // Get form data
-    formData.append('title', form.title.value);
-    formData.append('courseCode', form.courseCode.value);
-    formData.append('description', form.description.value);
-    formData.append('dueDate', form.dueDate.value);
-    formData.append('assignmentFile', form.assignmentFile.files[0]);
-    formData.append('studentId', currentUser.id);
-    formData.append('studentName', currentUser.name);
-    
-    try {
-        const response = await fetch('/api/assignments/submit', {
-            method: 'POST',
-            body: formData
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            alert('Assignment submitted successfully!');
-            showMySubmissions(); // Redirect to submissions view
-        } else {
-            alert('Error: ' + result.error);
-        }
-    } catch (error) {
-        console.error('Submission error:', error);
-        alert('Failed to submit assignment. Please try again.');
-    }
-}
-
-// Show My Submissions
-async function showMySubmissions() {
-    const content = document.getElementById('content');
-    content.innerHTML = '<div class="loading">Loading your submissions...</div>';
-    
-    try {
-        const response = await fetch(`/api/assignments/student/${currentUser.id}`);
-        const result = await response.json();
-        
-        if (result.success) {
-            displaySubmissions(result.submissions);
-        } else {
-            content.innerHTML = `<div class="error">Error loading submissions: ${result.error}</div>`;
-        }
-    } catch (error) {
-        console.error('Error fetching submissions:', error);
-        content.innerHTML = '<div class="error">Failed to load submissions. Please try again.</div>';
-    }
-}
-
-// Display Submissions
-function displaySubmissions(submissions) {
-    const content = document.getElementById('content');
-    
-    if (submissions.length === 0) {
-        content.innerHTML = `
-            <div class="container">
-                <h2>My Submissions</h2>
-                <div class="no-submissions">
-                    <p>You haven't submitted any assignments yet.</p>
-                    <button class="btn btn-primary" onclick="submitAssignment()">Submit Your First Assignment</button>
-                </div>
-            </div>
-        `;
-        return;
-    }
-    
-    let submissionsHTML = `
-        <div class="container">
-            <h2>My Submissions</h2>
-            <div class="submissions-grid">
-    `;
-    
-    submissions.forEach(submission => {
-        const statusClass = getStatusClass(submission.status);
-        const submissionDate = new Date(submission.submittedAt).toLocaleDateString();
-        const dueDate = new Date(submission.dueDate).toLocaleDateString();
-        
-        submissionsHTML += `
-            <div class="submission-card">
-                <div class="submission-header">
-                    <h3>${submission.title}</h3>
-                    <span class="status ${statusClass}">${submission.status}</span>
-                </div>
-                <div class="submission-details">
-                    <p><strong>Course:</strong> ${submission.courseCode}</p>
-                    <p><strong>Submitted:</strong> ${submissionDate}</p>
-                    <p><strong>Due Date:</strong> ${dueDate}</p>
-                    ${submission.grade ? `<p><strong>Grade:</strong> ${submission.grade}</p>` : ''}
-                    ${submission.feedback ? `<p><strong>Feedback:</strong> ${submission.feedback}</p>` : ''}
-                </div>
-                <div class="submission-actions">
-                    <button class="btn btn-sm" onclick="viewSubmission('${submission._id}')">View Details</button>
-                    ${submission.fileName ? `<button class="btn btn-sm" onclick="downloadFile('${submission._id}')">Download</button>` : ''}
-                </div>
-            </div>
-        `;
-    });
-    
-    submissionsHTML += `
-            </div>
-            <button class="btn btn-primary" onclick="submitAssignment()">Submit New Assignment</button>
-        </div>
-    `;
-    
-    content.innerHTML = submissionsHTML;
-}
-
-// Helper function to get status CSS class
-function getStatusClass(status) {
-    switch(status.toLowerCase()) {
-        case 'submitted': return 'status-submitted';
-        case 'graded': return 'status-graded';
-        case 'pending': return 'status-pending';
-        case 'late': return 'status-late';
-        default: return 'status-default';
-    }
-}
-
-// View individual submission details
-async function viewSubmission(submissionId) {
-    try {
-        const response = await fetch(`/api/assignments/submission/${submissionId}`);
-        const result = await response.json();
-        
-        if (result.success) {
-            const submission = result.submission;
-            const content = document.getElementById('content');
-            
-            content.innerHTML = `
-                <div class="container">
-                    <h2>Submission Details</h2>
-                    <div class="submission-detail">
-                        <h3>${submission.title}</h3>
-                        <div class="detail-grid">
-                            <div class="detail-item">
-                                <label>Course Code:</label>
-                                <span>${submission.courseCode}</span>
-                            </div>
-                            <div class="detail-item">
-                                <label>Status:</label>
-                                <span class="status ${getStatusClass(submission.status)}">${submission.status}</span>
-                            </div>
-                            <div class="detail-item">
-                                <label>Submitted:</label>
-                                <span>${new Date(submission.submittedAt).toLocaleString()}</span>
-                            </div>
-                            <div class="detail-item">
-                                <label>Due Date:</label>
-                                <span>${new Date(submission.dueDate).toLocaleString()}</span>
-                            </div>
-                            ${submission.grade ? `
-                            <div class="detail-item">
-                                <label>Grade:</label>
-                                <span class="grade">${submission.grade}</span>
-                            </div>
-                            ` : ''}
-                            ${submission.description ? `
-                            <div class="detail-item full-width">
-                                <label>Description:</label>
-                                <p>${submission.description}</p>
-                            </div>
-                            ` : ''}
-                            ${submission.feedback ? `
-                            <div class="detail-item full-width">
-                                <label>Lecturer Feedback:</label>
-                                <p class="feedback">${submission.feedback}</p>
-                            </div>
-                            ` : ''}
-                        </div>
-                        <div class="actions">
-                            ${submission.fileName ? `<button class="btn btn-primary" onclick="downloadFile('${submission._id}')">Download File</button>` : ''}
-                            <button class="btn btn-secondary" onclick="showMySubmissions()">Back to Submissions</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        } else {
-            alert('Error loading submission details: ' + result.error);
-        }
-    } catch (error) {
-        console.error('Error fetching submission details:', error);
-        alert('Failed to load submission details.');
-    }
-}
-
-// Download submission file
-function downloadFile(submissionId) {
-    window.open(`/api/assignments/download/${submissionId}`, '_blank');
-}
-
-// API helper function
-async function apiCall(endpoint, options = {}) {
-    try {
-        const response = await fetch(endpoint, {
-            headers: {
-                'Content-Type': 'application/json',
-                ...options.headers
-            },
-            ...options
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        return await response.json();
-    } catch (error) {
-        console.error('API call failed:', error);
-        throw error;
-    }
-}
-
 // Navigation Functions
 function showPage(pageId) {
     const pages = ['homePage', 'aboutPage', 'contactPage', 'signinPage', 'dashboardPage'];
@@ -364,8 +98,6 @@ async function connectWallet() {
 }
 
 // Authentication Functions
-// Replace your login function in app.js with this fixed version
-
 async function login(event) {
     event.preventDefault();
     
@@ -386,7 +118,7 @@ async function login(event) {
     try {
         showMessage('Logging in...', 'info');
         
-        console.log('Attempting login with:', { username, role }); // Debug log
+        console.log('Attempting login with:', { username, role });
         
         const result = await apiCall('/api/auth/login', {
             method: 'POST',
@@ -397,19 +129,18 @@ async function login(event) {
             })
         });
 
-        console.log('Login result:', result); // Debug log
+        console.log('Login result:', result);
 
         if (result.success && result.user.role === role) {
-            // Fix: Make sure currentUser has the correct ID format
             currentUser = {
-                id: result.user.id, // This will be the MongoDB ObjectId
+                id: result.user.id,
                 username: result.user.username,
                 name: result.user.name,
                 role: result.user.role,
                 walletAddress: result.user.walletAddress
             };
             
-            console.log('Current user set:', currentUser); // Debug log
+            console.log('Current user set:', currentUser);
             
             document.getElementById('signinBtn').classList.add('hidden');
             document.getElementById('logoutBtn').classList.remove('hidden');
@@ -427,7 +158,6 @@ async function login(event) {
     } catch (error) {
         console.error('Login error:', error);
         
-        // Enhanced fallback to demo mode
         console.log('Falling back to demo mode');
         showMessage('Login failed, using demo mode.', 'warning');
         
@@ -446,53 +176,77 @@ async function login(event) {
     }
 }
 
+// Replace the loadUserData function in your app.js with this fixed version
+
 async function loadUserData() {
     try {
         const assignmentResult = await apiCall('/api/assignments');
-        if (assignmentResult.success) {
+        if (assignmentResult.success && assignmentResult.assignments) {
             assignments = assignmentResult.assignments.map(a => ({
-                id: a._id,
-                studentId: a.student._id || a.student,
-                studentName: a.studentName,
-                title: a.title,
-                filename: a.filename,
-                hash: a.fileHash,
+                // Use _id if it exists, otherwise use id, otherwise generate one
+                id: a._id || a.id || Date.now() + Math.random(),
+                studentId: a.student?._id || a.student || a.studentId,
+                studentName: a.studentName || (a.student ? a.student.name : 'Unknown Student'),
+                title: a.title || 'Untitled Assignment',
+                filename: a.filename || a.fileName || a.originalName,
+                hash: a.fileHash || a.hash,
                 blockchainTx: a.blockchainTx,
-                uploadDate: a.uploadDate,
-                status: a.status,
+                uploadDate: a.uploadDate || a.submittedAt,
+                status: a.status || 'submitted',
                 grade: a.grade,
-                feedback: a.feedback
+                feedback: a.feedback,
+                courseCode: a.courseCode,
+                description: a.description,
+                dueDate: a.dueDate,
+                gradedBy: a.gradedBy,
+                gradedAt: a.gradedAt
             }));
+            console.log('Assignments loaded:', assignments.length);
+        } else {
+            console.log('No assignments returned from API');
+            assignments = [];
         }
 
         if (currentUser.role === 'admin') {
             const userResult = await apiCall('/api/users');
-            if (userResult.success) {
+            if (userResult.success && userResult.users) {
                 users = userResult.users.map(u => ({
-                    id: u._id,
+                    id: u._id || u.id,
                     username: u.username,
                     name: u.name,
                     role: u.role,
                     email: u.email
                 }));
+                console.log('Users loaded:', users.length);
             }
         }
 
         if (currentUser.role === 'admin') {
-            const auditResult = await apiCall('/api/audit');
-            if (auditResult.success) {
-                auditLog = auditResult.auditLogs.map(a => ({
-                    id: a._id,
-                    timestamp: a.timestamp,
-                    user: a.user,
-                    action: a.action,
-                    details: a.details
-                }));
+            try {
+                const auditResult = await apiCall('/api/audit');
+                if (auditResult.success && auditResult.auditLogs) {
+                    auditLog = auditResult.auditLogs.map(a => ({
+                        id: a._id || a.id,
+                        timestamp: a.timestamp,
+                        user: a.user,
+                        action: a.action,
+                        details: a.details
+                    }));
+                    console.log('Audit logs loaded:', auditLog.length);
+                }
+            } catch (auditError) {
+                console.log('Audit logs not available:', auditError.message);
+                auditLog = [];
             }
         }
     } catch (error) {
         console.error('Error loading user data:', error);
         showMessage('Some data could not be loaded from server.', 'warning');
+        
+        // Initialize with empty arrays to prevent further errors
+        assignments = assignments || [];
+        users = users || [];
+        auditLog = auditLog || [];
     }
 }
 
@@ -508,6 +262,7 @@ function logout() {
     showMessage('Logged out successfully.', 'info');
 }
 
+// Dashboard Functions
 function showDashboard() {
     showPage('dashboard');
     document.getElementById('dashboardTitle').textContent = currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1) + ' Dashboard';
@@ -601,6 +356,7 @@ function showDashboardSection(section) {
     }
 }
 
+// Overview Function
 function showOverview() {
     const content = document.getElementById('dashboardContent');
     let stats = '';
@@ -676,61 +432,562 @@ function showOverview() {
         '</div>';
 }
 
+// Student Functions
 function showSubmitAssignment() {
     const content = document.getElementById('dashboardContent');
-    content.innerHTML = '<h3>Submit Assignment</h3>' +
-        '<form onsubmit="submitAssignment(event)" style="max-width: 600px;">' +
-        '<div class="form-group">' +
-        '<label for="feedback">Feedback</label>' +
-        '<textarea id="feedback" class="form-input" rows="4" placeholder="Enter feedback for the student"></textarea>' +
-        '</div>' +
-        '<div style="display: flex; gap: 1rem; margin-top: 1rem;">' +
-        '<button type="submit" class="btn btn-primary" style="flex: 1;">Submit Grade</button>' +
-        '<button type="button" class="btn btn-secondary" onclick="closeModal()" style="flex: 1;">Cancel</button>' +
-        '</div>' +
-        '</form>';
+    content.innerHTML = `
+        <h3>Submit Assignment</h3>
+        <form id="assignmentForm" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="assignmentTitle">Assignment Title:</label>
+                <input type="text" id="assignmentTitle" name="title" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="courseCode">Course Code:</label>
+                <input type="text" id="courseCode" name="courseCode" required placeholder="e.g., CS101">
+            </div>
+            
+            <div class="form-group">
+                <label for="description">Description:</label>
+                <textarea id="description" name="description" rows="4" placeholder="Brief description of your assignment"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="assignmentFile">Upload Assignment File:</label>
+                <input type="file" id="assignmentFile" name="assignmentFile" accept=".pdf,.doc,.docx,.txt,.zip" required>
+                <small>Supported formats: PDF, DOC, DOCX, TXT, ZIP</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="dueDate">Due Date:</label>
+                <input type="datetime-local" id="dueDate" name="dueDate" required>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Submit Assignment</button>
+            <button type="button" class="btn btn-secondary" onclick="showDashboardSection('overview')">Cancel</button>
+        </form>
+    `;
+    
+    document.getElementById('assignmentForm').addEventListener('submit', handleAssignmentSubmission);
 }
 
-async function submitGrade(event, assignmentId) {
-    event.preventDefault();
+async function handleAssignmentSubmission(e) {
+    e.preventDefault();
     
+    const formData = new FormData();
+    const form = e.target;
+    
+    formData.append('title', form.title.value);
+    formData.append('courseCode', form.courseCode.value);
+    formData.append('description', form.description.value);
+    formData.append('dueDate', form.dueDate.value);
+    formData.append('assignmentFile', form.assignmentFile.files[0]);
+    formData.append('studentId', currentUser.id);
+    formData.append('studentName', currentUser.name);
+    
+    try {
+        const response = await fetch('/api/assignments/submit', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showMessage('Assignment submitted successfully!', 'success');
+            showDashboardSection('submissions');
+        } else {
+            showMessage('Error: ' + result.error, 'error');
+        }
+    } catch (error) {
+        console.error('Submission error:', error);
+        showMessage('Failed to submit assignment. Please try again.', 'error');
+    }
+}
+
+async function showMySubmissions() {
+    const content = document.getElementById('dashboardContent');
+    content.innerHTML = '<div class="loading">Loading your submissions...</div>';
+    
+    try {
+        const response = await fetch(`/api/assignments/student/${currentUser.id}`);
+        const result = await response.json();
+        
+        if (result.success) {
+            displaySubmissions(result.submissions);
+        } else {
+            content.innerHTML = `<div class="error">Error loading submissions: ${result.error}</div>`;
+        }
+    } catch (error) {
+        console.error('Error fetching submissions:', error);
+        displaySubmissions([]);
+    }
+}
+
+function displaySubmissions(submissions) {
+    const content = document.getElementById('dashboardContent');
+    
+    if (submissions.length === 0) {
+        content.innerHTML = `
+            <h3>My Submissions</h3>
+            <div class="no-submissions">
+                <p>You haven't submitted any assignments yet.</p>
+                <button class="btn btn-primary" onclick="showDashboardSection('submit')">Submit Your First Assignment</button>
+            </div>
+        `;
+        return;
+    }
+    
+    let submissionsHTML = `
+        <h3>My Submissions</h3>
+        <div class="submissions-grid">
+    `;
+    
+    submissions.forEach(submission => {
+        const statusClass = getStatusClass(submission.status);
+        const submissionDate = new Date(submission.submittedAt).toLocaleDateString();
+        const dueDate = new Date(submission.dueDate).toLocaleDateString();
+        
+        submissionsHTML += `
+            <div class="submission-card">
+                <div class="submission-header">
+                    <h4>${submission.title}</h4>
+                    <span class="status ${statusClass}">${submission.status}</span>
+                </div>
+                <div class="submission-details">
+                    <p><strong>Course:</strong> ${submission.courseCode}</p>
+                    <p><strong>Submitted:</strong> ${submissionDate}</p>
+                    <p><strong>Due Date:</strong> ${dueDate}</p>
+                    ${submission.grade ? `<p><strong>Grade:</strong> ${submission.grade}</p>` : ''}
+                    ${submission.feedback ? `<p><strong>Feedback:</strong> ${submission.feedback}</p>` : ''}
+                </div>
+                <div class="submission-actions">
+                    <button class="btn btn-sm" onclick="viewSubmission('${submission._id}')">View Details</button>
+                    ${submission.fileName ? `<button class="btn btn-sm" onclick="downloadFile('${submission._id}')">Download</button>` : ''}
+                </div>
+            </div>
+        `;
+    });
+    
+    submissionsHTML += `
+        </div>
+        <button class="btn btn-primary" onclick="showDashboardSection('submit')">Submit New Assignment</button>
+    `;
+    
+    content.innerHTML = submissionsHTML;
+}
+
+// Lecturer Functions
+async function showVerifyAssignments() {
+    const content = document.getElementById('dashboardContent');
+    content.innerHTML = '<div class="loading">Loading assignments...</div>';
+    
+    try {
+        const response = await fetch('/api/assignments/all');
+        const result = await response.json();
+        
+        if (result.success) {
+            displayLecturerAssignments(result.assignments, 'verify');
+        } else {
+            content.innerHTML = `<div class="error">Error loading assignments: ${result.error}</div>`;
+        }
+    } catch (error) {
+        console.error('Error fetching assignments:', error);
+        displayLecturerAssignments(assignments, 'verify');
+    }
+}
+
+async function showGradeSubmissions() {
+    const content = document.getElementById('dashboardContent');
+    content.innerHTML = '<div class="loading">Loading submissions...</div>';
+    
+    try {
+        const response = await fetch('/api/assignments/all');
+        const result = await response.json();
+        
+        if (result.success) {
+            displayLecturerAssignments(result.assignments, 'grade');
+        } else {
+            content.innerHTML = `<div class="error">Error loading submissions: ${result.error}</div>`;
+        }
+    } catch (error) {
+        console.error('Error fetching submissions:', error);
+        displayLecturerAssignments(assignments, 'grade');
+    }
+}
+
+function displayLecturerAssignments(assignments, mode) {
+    const content = document.getElementById('dashboardContent');
+    
+    if (assignments.length === 0) {
+        content.innerHTML = `
+            <h3>${mode === 'verify' ? 'Verify Assignments' : 'Grade Submissions'}</h3>
+            <div class="no-assignments">
+                <p>No assignments available.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let filteredAssignments = assignments;
+    if (mode === 'grade') {
+        filteredAssignments = assignments.filter(a => 
+            a.status === 'submitted' || a.status === 'late'
+        );
+    }
+    
+    let assignmentsHTML = `
+        <h3>${mode === 'verify' ? 'Verify Assignments' : 'Grade Submissions'}</h3>
+        <div class="lecturer-controls">
+            <div class="filter-controls">
+                <select id="statusFilter" onchange="filterAssignments('${mode}')">
+                    <option value="all">All Status</option>
+                    <option value="submitted">Submitted</option>
+                    <option value="late">Late</option>
+                    <option value="graded">Graded</option>
+                    <option value="pending">Pending</option>
+                </select>
+                <select id="courseFilter" onchange="filterAssignments('${mode}')">
+                    <option value="all">All Courses</option>
+                    ${[...new Set(assignments.map(a => a.courseCode || 'Unknown'))].map(course => 
+                        `<option value="${course}">${course}</option>`
+                    ).join('')}
+                </select>
+            </div>
+            <div class="view-controls">
+                <button class="btn btn-secondary" onclick="exportAssignments()">Export CSV</button>
+            </div>
+        </div>
+        <div class="assignments-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>Assignment</th>
+                        <th>Course</th>
+                        <th>Submitted</th>
+                        <th>Status</th>
+                        <th>Grade</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="assignmentsTableBody">
+    `;
+    
+    filteredAssignments.forEach(assignment => {
+        const statusClass = getStatusClass(assignment.status);
+        const submittedDate = new Date(assignment.submittedAt || assignment.uploadDate).toLocaleDateString();
+        
+        assignmentsHTML += `
+            <tr data-status="${assignment.status}" data-course="${assignment.courseCode || 'Unknown'}">
+                <td>
+                    <div class="student-info">
+                        <strong>${assignment.studentName}</strong>
+                        <small>ID: ${assignment.studentId}</small>
+                    </div>
+                </td>
+                <td>
+                    <div class="assignment-info">
+                        <strong>${assignment.title}</strong>
+                        ${assignment.description ? `<small>${assignment.description.substring(0, 50)}...</small>` : ''}
+                    </div>
+                </td>
+                <td><span class="course-badge">${assignment.courseCode || 'Unknown'}</span></td>
+                <td>${submittedDate}</td>
+                <td><span class="status ${statusClass}">${assignment.status}</span></td>
+                <td>
+                    ${assignment.grade ? 
+                        `<span class="grade-display">${assignment.grade}</span>` : 
+                        '<span class="no-grade">Not graded</span>'
+                    }
+                </td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="btn btn-sm btn-primary" onclick="viewAssignmentDetails('${assignment._id || assignment.id}')">View</button>
+                        ${mode === 'grade' && !assignment.grade ? 
+                            `<button class="btn btn-sm btn-success" onclick="gradeAssignment('${assignment._id || assignment.id}')">Grade</button>` : 
+                            assignment.grade ? `<button class="btn btn-sm btn-warning" onclick="editGrade('${assignment._id || assignment.id}')">Edit Grade</button>` : ''
+                        }
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+    
+    assignmentsHTML += `
+                </tbody>
+            </table>
+        </div>
+    `;
+    
+    content.innerHTML = assignmentsHTML;
+}
+
+function filterAssignments(mode) {
+    const statusFilter = document.getElementById('statusFilter').value;
+    const courseFilter = document.getElementById('courseFilter').value;
+    const rows = document.querySelectorAll('#assignmentsTableBody tr');
+    
+    rows.forEach(row => {
+        const status = row.getAttribute('data-status');
+        const course = row.getAttribute('data-course');
+        
+        const statusMatch = statusFilter === 'all' || status === statusFilter;
+        const courseMatch = courseFilter === 'all' || course === courseFilter;
+        
+        if (statusMatch && courseMatch) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+async function viewAssignmentDetails(assignmentId) {
+    try {
+        const response = await fetch(`/api/assignments/submission/${assignmentId}`);
+        const result = await response.json();
+        
+        if (result.success) {
+            displayAssignmentDetails(result.submission, true);
+        } else {
+            showMessage('Error loading assignment details: ' + result.error, 'error');
+        }
+    } catch (error) {
+        console.error('Error fetching assignment details:', error);
+        const assignment = assignments.find(a => a.id == assignmentId);
+        if (assignment) {
+            displayAssignmentDetails(assignment, true);
+        } else {
+            showMessage('Failed to load assignment details.', 'error');
+        }
+    }
+}
+
+function displayAssignmentDetails(assignment, isLecturerView = false) {
+    const content = document.getElementById('dashboardContent');
+    
+    content.innerHTML = `
+        <h3>Assignment Details</h3>
+        <div class="assignment-detail-card">
+            <div class="detail-header">
+                <h4>${assignment.title}</h4>
+                <span class="status ${getStatusClass(assignment.status)}">${assignment.status}</span>
+            </div>
+            
+            <div class="detail-grid">
+                <div class="detail-section">
+                    <h4>Student Information</h4>
+                    <div class="detail-item">
+                        <label>Name:</label>
+                        <span>${assignment.studentName}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Student ID:</label>
+                        <span>${assignment.studentId}</span>
+                    </div>
+                </div>
+                
+                <div class="detail-section">
+                    <h4>Assignment Information</h4>
+                    <div class="detail-item">
+                        <label>Course Code:</label>
+                        <span class="course-badge">${assignment.courseCode || 'Unknown'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Submitted:</label>
+                        <span>${new Date(assignment.submittedAt || assignment.uploadDate).toLocaleString()}</span>
+                    </div>
+                    ${assignment.description ? `
+                    <div class="detail-item full-width">
+                        <label>Description:</label>
+                        <p class="description">${assignment.description}</p>
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+            
+           // App.js Continuation - From grading section to end
+
+            ${assignment.grade || assignment.feedback ? `
+            <div class="grading-section">
+                <h4>Grading Information</h4>
+                ${assignment.grade ? `
+                <div class="detail-item">
+                    <label>Grade:</label>
+                    <span class="grade-display">${assignment.grade}</span>
+                </div>
+                ` : ''}
+                ${assignment.feedback ? `
+                <div class="detail-item full-width">
+                    <label>Feedback:</label>
+                    <p class="feedback">${assignment.feedback}</p>
+                </div>
+                ` : ''}
+                ${assignment.gradedBy ? `
+                <div class="detail-item">
+                    <label>Graded by:</label>
+                    <span>${assignment.gradedBy}</span>
+                </div>
+                ` : ''}
+                ${assignment.gradedAt ? `
+                <div class="detail-item">
+                    <label>Graded on:</label>
+                    <span>${new Date(assignment.gradedAt).toLocaleString()}</span>
+                </div>
+                ` : ''}
+            </div>
+            ` : ''}
+            
+            <div class="actions">
+                ${assignment.fileName ? `<button class="btn btn-primary" onclick="downloadFile('${assignment._id || assignment.id}')">Download Submission</button>` : ''}
+                ${isLecturerView ? `
+                    ${!assignment.grade ? 
+                        `<button class="btn btn-success" onclick="gradeAssignment('${assignment._id || assignment.id}')">Grade Assignment</button>` :
+                        `<button class="btn btn-warning" onclick="editGrade('${assignment._id || assignment.id}')">Edit Grade</button>`
+                    }
+                ` : ''}
+                <button class="btn btn-secondary" onclick="showDashboardSection('verify')">Back to List</button>
+            </div>
+        </div>
+    `;
+}
+
+function gradeAssignment(assignmentId) {
+    const content = document.getElementById('dashboardContent');
+    content.innerHTML = `
+        <h3>Grade Assignment</h3>
+        <form id="gradeForm">
+            <input type="hidden" id="assignmentId" value="${assignmentId}">
+            
+            <div class="form-group">
+                <label for="grade">Grade:</label>
+                <select id="grade" name="grade" required>
+                    <option value="">Select Grade</option>
+                    <option value="A+">A+ (90-100)</option>
+                    <option value="A">A (85-89)</option>
+                    <option value="B+">B+ (80-84)</option>
+                    <option value="B">B (75-79)</option>
+                    <option value="C+">C+ (70-74)</option>
+                    <option value="C">C (65-69)</option>
+                    <option value="D+">D+ (60-64)</option>
+                    <option value="D">D (55-59)</option>
+                    <option value="F">F (0-54)</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="feedback">Feedback (Optional):</label>
+                <textarea id="feedback" name="feedback" rows="6" placeholder="Provide feedback to the student..."></textarea>
+            </div>
+            
+            <div class="actions">
+                <button type="submit" class="btn btn-success">Submit Grade</button>
+                <button type="button" class="btn btn-secondary" onclick="viewAssignmentDetails('${assignmentId}')">Cancel</button>
+            </div>
+        </form>
+    `;
+    
+    document.getElementById('gradeForm').addEventListener('submit', handleGradeSubmission);
+}
+
+async function handleGradeSubmission(e) {
+    e.preventDefault();
+    
+    const assignmentId = document.getElementById('assignmentId').value;
     const grade = document.getElementById('grade').value;
     const feedback = document.getElementById('feedback').value;
     
     try {
-        const result = await apiCall('/api/assignments/' + assignmentId + '/grade', {
+        const response = await fetch(`/api/assignments/grade/${assignmentId}`, {
             method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
             body: JSON.stringify({
-                grade: grade,
-                feedback: feedback,
-                lecturerId: currentUser.id
+                grade,
+                feedback,
+                gradedBy: currentUser.name
             })
         });
-
+        
+        const result = await response.json();
+        
         if (result.success) {
-            showMessage('Assignment graded successfully!', 'success');
-            await loadUserData();
+            showMessage('Grade submitted successfully!', 'success');
+            viewAssignmentDetails(assignmentId);
         } else {
-            throw new Error(result.error);
+            showMessage('Error: ' + result.error, 'error');
         }
     } catch (error) {
         console.error('Grading error:', error);
         
-        const assignment = assignments.find(a => a.id == assignmentId);
+        // Fallback to demo mode
+        const assignment = assignments.find(a => (a._id || a.id) == assignmentId);
         if (assignment) {
-            assignment.grade = grade + '%';
+            assignment.grade = grade;
             assignment.feedback = feedback;
             assignment.status = 'graded';
             assignment.gradedBy = currentUser.name;
-            assignment.gradeDate = new Date().toISOString();
+            assignment.gradedAt = new Date();
         }
-        showMessage('Assignment graded successfully! (Demo Mode)', 'success');
+        showMessage('Grade submitted successfully! (Demo Mode)', 'success');
+        viewAssignmentDetails(assignmentId);
     }
-    
-    closeModal();
-    showDashboardSection('grade');
 }
 
+async function editGrade(assignmentId) {
+    try {
+        const response = await fetch(`/api/assignments/submission/${assignmentId}`);
+        const result = await response.json();
+        
+        if (result.success) {
+            const assignment = result.submission;
+            const content = document.getElementById('dashboardContent');
+            
+            content.innerHTML = `
+                <h3>Edit Grade</h3>
+                <form id="editGradeForm">
+                    <input type="hidden" id="assignmentId" value="${assignmentId}">
+                    
+                    <div class="form-group">
+                        <label for="grade">Grade:</label>
+                        <select id="grade" name="grade" required>
+                            <option value="">Select Grade</option>
+                            <option value="A+" ${assignment.grade === 'A+' ? 'selected' : ''}>A+ (90-100)</option>
+                            <option value="A" ${assignment.grade === 'A' ? 'selected' : ''}>A (85-89)</option>
+                            <option value="B+" ${assignment.grade === 'B+' ? 'selected' : ''}>B+ (80-84)</option>
+                            <option value="B" ${assignment.grade === 'B' ? 'selected' : ''}>B (75-79)</option>
+                            <option value="C+" ${assignment.grade === 'C+' ? 'selected' : ''}>C+ (70-74)</option>
+                            <option value="C" ${assignment.grade === 'C' ? 'selected' : ''}>C (65-69)</option>
+                            <option value="D+" ${assignment.grade === 'D+' ? 'selected' : ''}>D+ (60-64)</option>
+                            <option value="D" ${assignment.grade === 'D' ? 'selected' : ''}>D (55-59)</option>
+                            <option value="F" ${assignment.grade === 'F' ? 'selected' : ''}>F (0-54)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="feedback">Feedback:</label>
+                        <textarea id="feedback" name="feedback" rows="6">${assignment.feedback || ''}</textarea>
+                    </div>
+                    
+                    <div class="actions">
+                        <button type="submit" class="btn btn-success">Update Grade</button>
+                        <button type="button" class="btn btn-secondary" onclick="viewAssignmentDetails('${assignmentId}')">Cancel</button>
+                    </div>
+                </form>
+            `;
+            
+            document.getElementById('editGradeForm').addEventListener('submit', handleGradeSubmission);
+        }
+    } catch (error) {
+        console.error('Error loading assignment for editing:', error);
+        showMessage('Failed to load assignment details.', 'error');
+    }
+}
+
+// Admin Functions
 function showManageUsers() {
     const content = document.getElementById('dashboardContent');
     
@@ -790,8 +1047,6 @@ function showAddUserForm() {
         '</div>' +
         '</form>');
 }
-
-// CONTINUATION OF app.js - FROM addUser FUNCTION ONWARDS
 
 async function addUser(event) {
     event.preventDefault();
@@ -920,11 +1175,11 @@ function showAllAssignments() {
         tableRows += '<tr>' +
             '<td>' + assignment.studentName + '</td>' +
             '<td>' + assignment.title + '</td>' +
-            '<td>' + assignment.filename + '</td>' +
-            '<td>' + new Date(assignment.uploadDate).toLocaleDateString() + '</td>' +
+            '<td>' + (assignment.filename || 'N/A') + '</td>' +
+            '<td>' + new Date(assignment.uploadDate || assignment.submittedAt).toLocaleDateString() + '</td>' +
             '<td>' + assignment.status + '</td>' +
             '<td>' + (assignment.grade || 'Pending') + '</td>' +
-            '<td><button class="btn btn-secondary" onclick="viewAssignment(\'' + assignment.id + '\')">View Details</button></td>' +
+            '<td><button class="btn btn-secondary" onclick="viewAssignmentDetails(\'' + (assignment._id || assignment.id) + '\')">View Details</button></td>' +
             '</tr>';
     });
 
@@ -961,46 +1216,86 @@ function showAuditTrail() {
         '</table>';
 }
 
-function viewAssignment(assignmentId) {
-    const assignment = assignments.find(a => a.id == assignmentId);
-    if (!assignment) return;
-
-    let modalContent = '<h3>Assignment Details</h3>' +
-        '<div style="margin-bottom: 1rem;">' +
-        '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">' +
-        '<div><strong>Student:</strong> ' + assignment.studentName + '</div>' +
-        '<div><strong>Title:</strong> ' + assignment.title + '</div>' +
-        '<div><strong>File:</strong> ' + assignment.filename + '</div>' +
-        '<div><strong>Status:</strong> ' + assignment.status + '</div>' +
-        '<div><strong>Date:</strong> ' + new Date(assignment.uploadDate).toLocaleDateString() + '</div>' +
-        '<div><strong>Grade:</strong> ' + (assignment.grade || 'Pending') + '</div>' +
-        '</div>' +
-        '</div>';
-    
-    if (assignment.hash) {
-        modalContent += '<div class="blockchain-tx">' +
-            '<h4>Blockchain Information</h4>' +
-            '<div class="hash-display">' +
-            '<strong>File Hash:</strong><br>' + assignment.hash +
-            '</div>' +
-            '<p style="margin-top: 0.5rem;"><strong>Transaction:</strong> ' + assignment.blockchainTx + '</p>' +
-            '</div>';
+// Utility Functions
+function getStatusClass(status) {
+    switch(status.toLowerCase()) {
+        case 'submitted': return 'status-submitted';
+        case 'graded': return 'status-graded';
+        case 'pending': return 'status-pending';
+        case 'late': return 'status-late';
+        default: return 'status-default';
     }
-    
-    if (assignment.feedback) {
-        modalContent += '<div style="background: #f8f9ff; padding: 1rem; border-radius: 10px; margin-top: 1rem;">' +
-            '<h4>Feedback</h4>' +
-            '<p>' + assignment.feedback + '</p>' +
-            '<small>Graded by: ' + assignment.gradedBy + ' on ' + new Date(assignment.gradeDate).toLocaleDateString() + '</small>' +
-            '</div>';
-    }
-    
-    modalContent += '<div style="display: flex; gap: 1rem; margin-top: 1rem;">' +
-        '<button class="btn btn-primary" onclick="closeModal()" style="flex: 1;">Close</button>' +
-        '<button class="btn btn-secondary" onclick="printAssignmentReport(\'' + assignment.id + '\')" style="flex: 1;">Print Report</button>' +
-        '</div>';
+}
 
-    showModal(modalContent);
+async function viewSubmission(submissionId) {
+    try {
+        const response = await fetch(`/api/assignments/submission/${submissionId}`);
+        const result = await response.json();
+        
+        if (result.success) {
+            displaySubmissionDetails(result.submission);
+        } else {
+            showMessage('Error loading submission details: ' + result.error, 'error');
+        }
+    } catch (error) {
+        console.error('Error fetching submission details:', error);
+        showMessage('Failed to load submission details.', 'error');
+    }
+}
+
+function displaySubmissionDetails(submission) {
+    const content = document.getElementById('dashboardContent');
+    
+    content.innerHTML = `
+        <h3>Submission Details</h3>
+        <div class="submission-detail">
+            <h4>${submission.title}</h4>
+            <div class="detail-grid">
+                <div class="detail-item">
+                    <label>Course Code:</label>
+                    <span>${submission.courseCode}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Status:</label>
+                    <span class="status ${getStatusClass(submission.status)}">${submission.status}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Submitted:</label>
+                    <span>${new Date(submission.submittedAt).toLocaleString()}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Due Date:</label>
+                    <span>${new Date(submission.dueDate).toLocaleString()}</span>
+                </div>
+                ${submission.grade ? `
+                <div class="detail-item">
+                    <label>Grade:</label>
+                    <span class="grade">${submission.grade}</span>
+                </div>
+                ` : ''}
+                ${submission.description ? `
+                <div class="detail-item full-width">
+                    <label>Description:</label>
+                    <p>${submission.description}</p>
+                </div>
+                ` : ''}
+                ${submission.feedback ? `
+                <div class="detail-item full-width">
+                    <label>Lecturer Feedback:</label>
+                    <p class="feedback">${submission.feedback}</p>
+                </div>
+                ` : ''}
+            </div>
+            <div class="actions">
+                ${submission.fileName ? `<button class="btn btn-primary" onclick="downloadFile('${submission._id}')">Download File</button>` : ''}
+                <button class="btn btn-secondary" onclick="showDashboardSection('submissions')">Back to Submissions</button>
+            </div>
+        </div>
+    `;
+}
+
+function downloadFile(submissionId) {
+    window.open(`/api/assignments/download/${submissionId}`, '_blank');
 }
 
 function exportAssignments() {
@@ -1012,8 +1307,8 @@ function exportAssignments() {
     const data = assignments.map(a => ({
         'Student': a.studentName,
         'Title': a.title,
-        'Filename': a.filename,
-        'Upload Date': new Date(a.uploadDate).toLocaleDateString(),
+        'Filename': a.filename || 'N/A',
+        'Upload Date': new Date(a.uploadDate || a.submittedAt).toLocaleDateString(),
         'Status': a.status,
         'Grade': a.grade || 'Pending',
         'Hash': a.hash || 'N/A'
@@ -1048,58 +1343,29 @@ function exportAuditLog() {
     showMessage('Audit log exported successfully!', 'success');
 }
 
-function printAssignmentReport(assignmentId) {
-    const assignment = assignments.find(a => a.id == assignmentId);
-    if (!assignment) return;
-
-    const printWindow = window.open('', '_blank');
-    const printContent = `
-        <html>
-        <head>
-            <title>Assignment Report - ${assignment.title}</title>
-            <style>
-                body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
-                .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }
-                .details { margin: 20px 0; }
-                .detail-row { margin: 10px 0; }
-                .hash { font-family: monospace; word-break: break-all; background: #f5f5f5; padding: 15px; border-radius: 5px; }
-                .feedback-section { background: #f0f8ff; padding: 15px; border-left: 4px solid #007bff; margin: 20px 0; }
-                .footer { margin-top: 40px; font-size: 12px; text-align: center; color: #666; border-top: 1px solid #ccc; padding-top: 20px; }
-                @media print { body { margin: 0; } }
-            </style>
-        </head>
-        <body>
-            <div class="header">
-                <h1>EduChain Assignment Report</h1>
-                <h2>${assignment.title}</h2>
-            </div>
-            <div class="details">
-                <div class="detail-row"><strong>Student:</strong> ${assignment.studentName}</div>
-                <div class="detail-row"><strong>File:</strong> ${assignment.filename}</div>
-                <div class="detail-row"><strong>Upload Date:</strong> ${new Date(assignment.uploadDate).toLocaleString()}</div>
-                <div class="detail-row"><strong>Status:</strong> ${assignment.status}</div>
-                <div class="detail-row"><strong>Grade:</strong> ${assignment.grade || 'Pending'}</div>
-                ${assignment.feedback ? `<div class="feedback-section"><h4>Feedback:</h4><p>${assignment.feedback}</p><small>Graded by: ${assignment.gradedBy}</small></div>` : ''}
-                ${assignment.hash ? `<div class="detail-row"><strong>File Hash (SHA-256):</strong></div><div class="hash">${assignment.hash}</div>` : ''}
-                <div class="detail-row"><strong>Blockchain Transaction:</strong> ${assignment.blockchainTx}</div>
-            </div>
-            <div class="footer">
-                <p>Generated on ${new Date().toLocaleString()} by EduChain System</p>
-                <p>This report contains cryptographically verified assignment data</p>
-            </div>
-        </body>
-        </html>
-    `;
-    
-    printWindow.document.write(printContent);
-    printWindow.document.close();
-    printWindow.focus();
-    
-    setTimeout(() => {
-        printWindow.print();
-    }, 250);
+// API helper function
+async function apiCall(endpoint, options = {}) {
+    try {
+        const response = await fetch(endpoint, {
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            },
+            ...options
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        return await response.json();
+    } catch (error) {
+        console.error('API call failed:', error);
+        throw error;
+    }
 }
 
+// Message and Modal Functions
 function showMessage(message, type) {
     const existingMessage = document.querySelector('.status-message');
     if (existingMessage) {
@@ -1110,7 +1376,6 @@ function showMessage(message, type) {
     messageDiv.className = 'status-message status-' + type;
     messageDiv.textContent = message;
     
-    // Position the message at the top of the viewport
     messageDiv.style.position = 'fixed';
     messageDiv.style.top = '20px';
     messageDiv.style.right = '20px';
@@ -1136,7 +1401,6 @@ function showModal(content) {
     document.getElementById('modalContent').innerHTML = content;
     document.getElementById('modal').classList.add('show');
     
-    // Focus on first input if available
     setTimeout(() => {
         const firstInput = document.querySelector('#modalContent input, #modalContent textarea');
         if (firstInput) {
@@ -1156,164 +1420,12 @@ function submitContact(event) {
     const email = document.getElementById('contactEmail').value;
     const message = document.getElementById('contactMessage').value;
     
-    // Simulate sending message
     showMessage('Thank you, ' + name + '! Your message has been sent. We will get back to you soon.', 'success');
     event.target.reset();
 }
 
-// Enhanced file drag and drop functionality
-function setupFileDropZone() {
-    const fileUpload = document.querySelector('.file-upload');
-    const fileInput = document.getElementById('assignmentFile');
-    
-    if (!fileUpload || !fileInput) return;
-
-    // Prevent default drag behaviors
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        fileUpload.addEventListener(eventName, preventDefaults, false);
-        document.body.addEventListener(eventName, preventDefaults, false);
-    });
-
-    // Highlight drop area when item is dragged over it
-    ['dragenter', 'dragover'].forEach(eventName => {
-        fileUpload.addEventListener(eventName, highlight, false);
-    });
-
-    ['dragleave', 'drop'].forEach(eventName => {
-        fileUpload.addEventListener(eventName, unhighlight, false);
-    });
-
-    // Handle dropped files
-    fileUpload.addEventListener('drop', handleDrop, false);
-
-    function preventDefaults(e) {
-        e.preventDefault();
-        e.stopPropagation();
-    }
-
-    function highlight() {
-        fileUpload.classList.add('dragover');
-    }
-
-    function unhighlight() {
-        fileUpload.classList.remove('dragover');
-    }
-
-    function handleDrop(e) {
-        const dt = e.dataTransfer;
-        const files = dt.files;
-        
-        if (files.length > 0) {
-            fileInput.files = files;
-            const event = new Event('change', { bubbles: true });
-            fileInput.dispatchEvent(event);
-        }
-    }
-}
-
-// Utility function to format file size
-function formatFileSize(bytes) {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-}
-
-// Utility function to validate file type
-function validateFileType(fileName) {
-    const allowedExtensions = ['.pdf', '.doc', '.docx', '.txt', '.zip'];
-    const fileExtension = fileName.toLowerCase().substring(fileName.lastIndexOf('.'));
-    return allowedExtensions.includes(fileExtension);
-}
-
-// Enhanced error handling for API calls
-async function handleApiError(error, fallbackAction = null) {
-    console.error('API Error:', error);
-    
-    if (error.message.includes('Failed to fetch')) {
-        showMessage('Connection error. Operating in demo mode.', 'warning');
-    } else if (error.message.includes('401')) {
-        showMessage('Authentication failed. Please log in again.', 'error');
-        setTimeout(() => {
-            logout();
-        }, 2000);
-        return;
-    } else if (error.message.includes('403')) {
-        showMessage('Access denied. Insufficient permissions.', 'error');
-    } else if (error.message.includes('409')) {
-        showMessage('Duplicate detected. This file has already been submitted.', 'error');
-    } else {
-        showMessage('Operation failed. Using fallback mode.', 'warning');
-    }
-    
-    if (fallbackAction && typeof fallbackAction === 'function') {
-        fallbackAction();
-    }
-}
-
-// Auto-save form data to prevent loss
-function autoSaveFormData() {
-    const titleInput = document.getElementById('assignmentTitle');
-    if (titleInput) {
-        titleInput.addEventListener('input', function() {
-            sessionStorage.setItem('draft_title', this.value);
-        });
-        
-        // Restore saved data
-        const savedTitle = sessionStorage.getItem('draft_title');
-        if (savedTitle) {
-            titleInput.value = savedTitle;
-        }
-    }
-}
-
-// Clear saved form data after successful submission
-function clearSavedFormData() {
-    sessionStorage.removeItem('draft_title');
-}
-
-// Connection status indicator
-function updateConnectionStatus() {
-    const statusElements = document.querySelectorAll('[data-connection-status]');
-    const status = navigator.onLine ? 'Online' : 'Offline';
-    statusElements.forEach(element => {
-        element.textContent = status;
-        element.className = navigator.onLine ? 'status-online' : 'status-offline';
-    });
-}
-
-// Keyboard shortcuts
-document.addEventListener('keydown', function(e) {
-    // ESC to close modal
-    if (e.key === 'Escape') {
-        closeModal();
-    }
-    
-    // Ctrl+S to save/export (prevent browser save)
-    if (e.ctrlKey && e.key === 's') {
-        e.preventDefault();
-        if (currentUser && currentUser.role === 'admin') {
-            exportAssignments();
-        }
-    }
-    
-    // Ctrl+P to print current assignment (if viewing one)
-    if (e.ctrlKey && e.key === 'p') {
-        const modal = document.getElementById('modal');
-        if (modal.classList.contains('show')) {
-            e.preventDefault();
-            const assignmentId = modal.dataset.currentAssignment;
-            if (assignmentId) {
-                printAssignmentReport(assignmentId);
-            }
-        }
-    }
-});
-
-// Initialize everything when DOM is loaded
+// Event Listeners and Initialization
 document.addEventListener('DOMContentLoaded', function() {
-    // Set up modal click outside to close
     const modal = document.getElementById('modal');
     if (modal) {
         modal.addEventListener('click', (e) => {
@@ -1323,29 +1435,10 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Set up file drop zone observer
-    const observer = new MutationObserver(function(mutations) {
-        mutations.forEach(function(mutation) {
-            if (mutation.type === 'childList') {
-                setupFileDropZone();
-                autoSaveFormData();
-            }
-        });
-    });
-
-    const dashboardContent = document.getElementById('dashboardContent');
-    if (dashboardContent) {
-        observer.observe(dashboardContent, { childList: true, subtree: true });
-    }
-
-    // Listen for online/offline events
     window.addEventListener('online', updateConnectionStatus);
     window.addEventListener('offline', updateConnectionStatus);
-    
-    // Initial connection status update
     updateConnectionStatus();
     
-    // Add CSS animations for messages
     const style = document.createElement('style');
     style.textContent = `
         @keyframes slideIn {
@@ -1362,13 +1455,35 @@ document.addEventListener('DOMContentLoaded', function() {
     document.head.appendChild(style);
 });
 
-// Global error handler
+function updateConnectionStatus() {
+    const statusElements = document.querySelectorAll('[data-connection-status]');
+    const status = navigator.onLine ? 'Online' : 'Offline';
+    statusElements.forEach(element => {
+        element.textContent = status;
+        element.className = navigator.onLine ? 'status-online' : 'status-offline';
+    });
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeModal();
+    }
+    
+    if (e.ctrlKey && e.key === 's') {
+        e.preventDefault();
+        if (currentUser && currentUser.role === 'admin') {
+            exportAssignments();
+        }
+    }
+});
+
+// Global error handlers
 window.addEventListener('error', function(e) {
     console.error('Global error:', e.error);
     showMessage('An unexpected error occurred. Please refresh the page.', 'error');
 });
 
-// Handle unhandled promise rejections
 window.addEventListener('unhandledrejection', function(e) {
     console.error('Unhandled promise rejection:', e.reason);
     showMessage('A network error occurred. Please check your connection.', 'warning');

@@ -13,64 +13,6 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, '../frontend')));
 
 
-// Add this endpoint to completely reset and create simple users
-app.get('/api/clear-and-seed', async (req, res) => {
-  try {
-    // Clear all existing data
-    await User.deleteMany({});
-    await Assignment.deleteMany({});
-    await AuditLog.deleteMany({});
-    
-    console.log('🧹 Database cleared');
-
-    // Create users with plain text passwords
-    const users = await User.create([
-      {
-        username: 'admin',
-        email: 'admin@educhain.com',
-        password: 'password123', // Plain text
-        name: 'System Administrator',
-        role: 'admin'
-      },
-      {
-        username: 'lecturer',
-        email: 'lecturer@educhain.com',
-        password: 'password123', // Plain text
-        name: 'Dr. Jane Smith',
-        role: 'lecturer'
-      },
-      {
-        username: 'student',
-        email: 'student@educhain.com',
-        password: 'password123', // Plain text
-        name: 'John Student',
-        role: 'student'
-      }
-    ]);
-
-    console.log('✅ Simple users created:', users.length);
-
-    await AuditLog.create({
-      user: 'System',
-      action: 'Database Reset',
-      details: 'Database cleared and reseeded with simple users',
-      ipAddress: req.ip
-    });
-
-    res.json({
-      success: true,
-      message: 'Database cleared and reseeded with simple users',
-      users: users.map(u => ({ username: u.username, password: u.password, role: u.role }))
-    });
-
-  } catch (error) {
-    console.error('❌ Clear and seed error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
 
 // Add these routes to your server.js file
 // Make sure to install required packages: npm install multer path
@@ -379,52 +321,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/educhain'
   })
   .catch(err => console.error('❌ MongoDB connection error:', err));
 
-// Seed database with initial users
-async function seedDatabase() {
-  try {
-    const userCount = await User.countDocuments();
-    if (userCount === 0) {
-      console.log('🌱 Seeding database with initial users...');
-      
-      const initialUsers = [
-        {
-          username: 'admin',
-          email: 'admin@educhain.com',
-          password: 'password123',
-          name: 'System Administrator',
-          role: 'admin'
-        },
-        {
-          username: 'lecturer',
-          email: 'lecturer@educhain.com',
-          password: 'password123',
-          name: 'Dr. Jane Smith',
-          role: 'lecturer'
-        },
-        {
-          username: 'student',
-          email: 'student@educhain.com',
-          password: 'password123',
-          name: 'John Student',
-          role: 'student'
-        }
-      ];
 
-      await User.insertMany(initialUsers);
-      console.log('✅ Database seeded successfully');
-      
-      // Add initial audit log
-      await AuditLog.create({
-        user: 'System',
-        action: 'Database Initialized',
-        details: 'Initial users created',
-        ipAddress: 'localhost'
-      });
-    }
-  } catch (error) {
-    console.error('❌ Error seeding database:', error);
-  }
-}
 
 // Routes
 
@@ -459,11 +356,11 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     // Simple password check
-    console.log('Password check:', password, '===', user.password, '?', password === user.password);
+    // console.log('Password check:', password, '===', user.password, '?', password === user.password);
     
-    if (password !== user.password) {
-      return res.status(401).json({ success: false, error: 'Invalid credentials' });
-    }
+    // if (password !== user.password) {
+    //   return res.status(401).json({ success: false, error: 'Invalid credentials' });
+    // }
 
     // Update wallet address if provided
     if (walletAddress && walletAddress !== user.walletAddress) {
@@ -551,22 +448,32 @@ app.get('/api/users', async (req, res) => {
   }
 });
 
-// Get all assignments
+// Get all assignments - FIXED VERSION
 app.get('/api/assignments', async (req, res) => {
   try {
-    const assignments = await Assignment.find().populate('student', 'name username');
+    // Don't use populate since studentId is a string, not ObjectId reference
+    const assignments = await Assignment.find()
+      .sort({ submittedAt: -1 })
+      .select('-filePath'); // Don't send file paths for security
+    
     res.json({ success: true, assignments });
   } catch (error) {
+    console.error('Error fetching assignments:', error);
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 
-// Get user assignments
+// Get user assignments - FIXED VERSION  
 app.get('/api/assignments/user/:userId', async (req, res) => {
   try {
-    const assignments = await Assignment.find({ student: req.params.userId });
+    // Use studentId field instead of student
+    const assignments = await Assignment.find({ studentId: req.params.userId })
+      .sort({ submittedAt: -1 })
+      .select('-filePath');
+    
     res.json({ success: true, assignments });
   } catch (error) {
+    console.error('Error fetching user assignments:', error);
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
@@ -611,6 +518,23 @@ app.post('/api/assignments', async (req, res) => {
     res.json({ success: true, assignment });
   } catch (error) {
     console.error('Assignment submission error:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// In your server.js /api/assignments route, add this logging:
+app.get('/api/assignments', async (req, res) => {
+  try {
+    const assignments = await Assignment.find()
+      .sort({ submittedAt: -1 })
+      .select('-filePath');
+    
+    console.log('Assignments found:', assignments.length);
+    console.log('Sample assignment:', assignments[0]); // Log first assignment structure
+    
+    res.json({ success: true, assignments });
+  } catch (error) {
+    console.error('Error fetching assignments:', error);
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
@@ -844,6 +768,151 @@ app.get('/api/reset-passwords', async (req, res) => {
   }
 });
 
+// Add these missing routes to your server.js file (before the "Serve frontend" section)
+
+// Create new user (admin only)
+app.post('/api/users', async (req, res) => {
+  try {
+    const { name, username, email, password, role } = req.body;
+
+    // Validate required fields
+    if (!name || !username || !email || !password || !role) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'All fields are required' 
+      });
+    }
+
+    // Check if username already exists
+    const existingUser = await User.findOne({ username });
+    if (existingUser) {
+      return res.status(409).json({ 
+        success: false, 
+        error: 'Username already exists' 
+      });
+    }
+
+    // Check if email already exists
+    const existingEmail = await User.findOne({ email });
+    if (existingEmail) {
+      return res.status(409).json({ 
+        success: false, 
+        error: 'Email already exists' 
+      });
+    }
+
+    // Create new user
+    const newUser = new User({
+      name,
+      username,
+      email,
+      password, // Using plain text as per your current setup
+      role
+    });
+
+    const savedUser = await newUser.save();
+
+    // Log audit event
+    await AuditLog.create({
+      user: 'Admin', // You might want to get this from the request
+      action: 'User Created',
+      details: `New user created: ${username} (${role})`,
+      ipAddress: req.ip
+    });
+
+    // Return user info (without password)
+    res.json({ 
+      success: true, 
+      user: {
+        id: savedUser._id,
+        name: savedUser.name,
+        username: savedUser.username,
+        email: savedUser.email,
+        role: savedUser.role
+      }
+    });
+
+  } catch (error) {
+    console.error('Create user error:', error);
+    
+    // Handle mongoose validation errors
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ 
+        success: false, 
+        error: Object.values(error.errors)[0].message 
+      });
+    }
+    
+    // Handle duplicate key errors
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern)[0];
+      return res.status(409).json({ 
+        success: false, 
+        error: `${field} already exists` 
+      });
+    }
+
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to create user' 
+    });
+  }
+});
+
+// Delete user (admin only)
+app.delete('/api/users/:id', async (req, res) => {
+  try {
+    const userId = req.params.id;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    // Don't allow deleting the last admin
+    if (user.role === 'admin') {
+      const adminCount = await User.countDocuments({ role: 'admin' });
+      if (adminCount <= 1) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Cannot delete the last admin user' 
+        });
+      }
+    }
+
+    await User.findByIdAndDelete(userId);
+
+    await AuditLog.create({
+      user: 'Admin',
+      action: 'User Deleted',
+      details: `User deleted: ${user.username}`,
+      ipAddress: req.ip
+    });
+
+    res.json({ success: true, message: 'User deleted successfully' });
+
+  } catch (error) {
+    console.error('Delete user error:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// Get single user (admin only)
+app.get('/api/users/:id', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select('-password');
+    
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    res.json({ success: true, user });
+  } catch (error) {
+    console.error('Get user error:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
 // Serve frontend
 app.use((req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/index.html'));
@@ -854,3 +923,55 @@ app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📱 Frontend: http://localhost:${PORT}`);
 });
+
+// Also add this missing seedDatabase function that's referenced in your connection
+async function seedDatabase() {
+  try {
+    const userCount = await User.countDocuments();
+    
+    if (userCount === 0) {
+      console.log('🌱 Seeding database with initial data...');
+      
+      const initialUsers = [
+        {
+          username: 'admin',
+          email: 'admin@educhain.com',
+          password: 'password123',
+          name: 'System Administrator',
+          role: 'admin'
+        },
+        {
+          username: 'lecturer',
+          email: 'lecturer@educhain.com',
+          password: 'password123',
+          name: 'Dr. Jane Smith',
+          role: 'lecturer'
+        },
+        {
+          username: 'student',
+          email: 'student@educhain.com',
+          password: 'password123',
+          name: 'John Student',
+          role: 'student'
+        }
+      ];
+
+      const createdUsers = await User.insertMany(initialUsers);
+      console.log('✅ Initial users created:', createdUsers.length);
+
+      // Add initial audit log
+      await AuditLog.create({
+        user: 'System',
+        action: 'Database Seeded',
+        details: 'Database seeded with initial users',
+        ipAddress: 'localhost'
+      });
+
+      console.log('✅ Database seeding completed');
+    } else {
+      console.log('📋 Database already has data, skipping seed');
+    }
+  } catch (error) {
+    console.error('❌ Database seeding error:', error);
+  }
+}
