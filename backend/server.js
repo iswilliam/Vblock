@@ -75,6 +75,45 @@ const assignmentSchema = new mongoose.Schema({
 
 const Assignment = mongoose.model('Assignment', assignmentSchema);
 
+
+async function seedDatabase() {
+  try {
+    const userCount = await User.countDocuments();
+    
+    if (userCount === 0) {
+      console.log('🌱 Seeding database...');
+      
+      const initialUsers = [
+        {
+          username: 'admin',
+          email: 'admin@educhain.com',
+          password: 'password123',
+          name: 'System Administrator',
+          role: 'admin'
+        },
+        {
+          username: 'lecturer',
+          email: 'lecturer@educhain.com',  
+          password: 'password123',
+          name: 'Dr. Jane Smith',
+          role: 'lecturer'
+        },
+        {
+          username: 'student',
+          email: 'student@educhain.com',
+          password: 'password123', 
+          name: 'John Student',
+          role: 'student'
+        }
+      ];
+
+      await User.insertMany(initialUsers);
+      console.log('✅ Initial users created');
+    }
+  } catch (error) {
+    console.error('❌ Seeding error:', error);
+  }
+}
 // ROUTES
 
 // Submit Assignment
