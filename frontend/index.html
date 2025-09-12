@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduChain - Blockchain Assignment Management</title>
+    <script defer src="app.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+
+/* Add this CSS to your existing stylesheet for lecturer interface */
+
+/* Lecturer Controls */
+.lecturer-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.filter-controls {
+    display: flex;
+    gap: 1rem;
+}
+
+.filter-controls select {
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+
+.view-controls {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Assignments Table */
+.assignments-table {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.assignments-table table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.assignments-table th {
+    background: #4CAF50;
+    color: white;
+    padding: 1rem 0.75rem;
+    font-weight: 600;
+    text-align: left;
+    border-bottom: 2px solid #45a049;
+}
+
+.assignments-table td {
+    padding: 1rem 0.75rem;
+    border-bottom: 1px solid #eee;
+    vertical-align: top;
+}
+
+.assignments-table tr:hover {
+    background-color: #f8f9fa;
+}
+
+.assignments-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* Student Info */
+.student-info strong {
+    display: block;
+    color: #333;
+    margin-bottom: 0.25rem;
+}
+
+.student-info small {
+    color: #666;
+    font-size: 0.8rem;
+}
+
+/* Assignment Info */
+.assignment-info strong {
+    display: block;
+    color: #333;
+    margin-bottom: 0.25rem;
+}
+
+.assignment-info small {
+    color: #666;
+    font-size: 0.8rem;
+}
+
+/* Course Badge */
+.course-badge {
+    background: #e3f2fd;
+    color: #1976d2;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+/* Date Info */
+.date-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.late-indicator {
+    background: #ffebee;
+    color: #d32f2f;
+    padding: 0.125rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    align-self: flex-start;
+}
+
+/* Grade Display */
+.grade-display {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #4CAF50;
+    background: #e8f5e8;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+}
+
+.no-grade {
+    color: #666;
+    font-style: italic;
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.action-buttons .btn {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8rem;
+}
+
+/* Assignment Detail Card */
+.assignment-detail-card {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+}
+
+.detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #eee;
+}
+
+.detail-header h3 {
+    margin: 0;
+    color: #333;
+    font-size: 1.5rem;
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.detail-section {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+}
+
+.detail-section h4 {
+    margin: 0 0 1rem 0;
+    color: #4CAF50;
+    font-size: 1.1rem;
+    border-bottom: 2px solid #4CAF50;
+    padding-bottom: 0.5rem;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1rem;
+}
+
+.detail-item:last-child {
+    margin-bottom: 0;
+}
+
+.detail-item.full-width {
+    grid-column: 1 / -1;
+}
+
+.detail-item label {
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.detail-item span,
+.detail-item p {
+    color: #333;
+    margin: 0;
+}
+
+.description {
+    background: white;
+    padding: 1rem;
+    border-radius: 6px;
+    border-left: 4px solid #4CAF50;
+}
+
+/* Grading Section */
+.grading-section {
+    background: #e8f5e8;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+}
+
+.grading-section h4 {
+    margin: 0 0 1rem 0;
+    color: #2e7d32;
+    font-size: 1.1rem;
+}
+
+.grading-section .grade-display {
+    font-size: 1.5rem;
+    background: white;
+}
+
+.grading-section .feedback {
+    background: white;
+    padding: 1rem;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+    margin: 0;
+}
+
+/* No Assignments State */
+.no-assignments {
+    text-align: center;
+    padding: 3rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Grade Form */
+#gradeForm,
+#editGradeForm {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+#gradeForm .form-group select,
+#editGradeForm .form-group select {
+    background: white;
+}
+
+/* Responsive Design for Lecturer Interface */
+@media (max-width: 1024px) {
+    .lecturer-controls {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+    }
+    
+    .filter-controls {
+        justify-content: center;
+    }
+    
+    .assignments-table {
+        overflow-x: auto;
+    }
+    
+    .assignments-table table {
+        min-width: 800px;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+    
+    .action-buttons .btn {
+        width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .detail-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .detail-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .lecturer-controls {
+        padding: 1rem 0.5rem;
+    }
+    
+    .filter-controls {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .filter-controls select {
+        width: 100%;
+    }
+    
+    .assignments-table th,
+    .assignments-table td {
+        padding: 0.5rem;
+        font-size: 0.9rem;
+    }
+}
+
+        body { font-family: Arial, sans-serif; margin: 2em; }
+    #metamask-status { margin-left: 1em; font-weight: bold; }
+    #account-address { margin-top: 1em; color: #333; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Navigation */
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-link {
+            text-decoration: none;
+            color: #333;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .nav-link:hover {
+            color: #667eea;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        /* Landing Page */
+        .hero {
+            text-align: center;
+            padding: 4rem 0;
+            color: white;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+
+        .features {
+            background: white;
+            padding: 4rem 0;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .feature-card {
+            background: #f8f9ff;
+            padding: 2rem;
+            border-radius: 15px;
+            text-align: center;
+            border: 1px solid #e0e7ff;
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Auth Forms */
+        .auth-container {
+            background: white;
+            max-width: 400px;
+            margin: 2rem auto;
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 1rem;
+            background: white;
+        }
+
+        /* Dashboard */
+        .dashboard {
+            background: white;
+            margin: 2rem auto;
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .dashboard-nav {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .dashboard-btn {
+            padding: 0.75rem 1.5rem;
+            background: #f8f9ff;
+            border: 2px solid #e0e7ff;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #667eea;
+            transition: all 0.3s;
+        }
+
+        .dashboard-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .dashboard-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        /* File Upload */
+        .file-upload {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            background: #f8f9ff;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .file-upload:hover {
+            background: #f0f4ff;
+            transform: scale(1.02);
+        }
+
+        .file-upload.dragover {
+            background: #e0e7ff;
+            border-color: #4f46e5;
+        }
+
+        /* Status Messages */
+        .status-message {
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+            font-weight: 600;
+        }
+
+        .status-success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #10b981;
+        }
+
+        .status-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #ef4444;
+        }
+
+        .status-warning {
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #f59e0b;
+        }
+
+        .status-info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #3b82f6;
+        }
+
+        /* Tables */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .data-table th {
+            background: #667eea;
+            color: white;
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .data-table td {
+            padding: 1rem;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .data-table tr:hover {
+            background: #f8f9ff;
+        }
+
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 20px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80%;
+            overflow-y: auto;
+        }
+
+        /* Wallet Connection */
+        .wallet-status {
+            padding: 1rem;
+            background: #f8f9ff;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .wallet-connected {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .wallet-disconnected {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-menu {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .dashboard-header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .dashboard-nav {
+                flex-wrap: wrap;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .blockchain-tx {
+            background: #f0f9ff;
+            border: 1px solid #0ea5e9;
+            border-radius: 10px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .hash-display {
+            font-family: 'Courier New', monospace;
+            background: #1f2937;
+            color: #10b981;
+            padding: 1rem;
+            border-radius: 8px;
+            word-break: break-all;
+            font-size: 0.875rem;
+        }
+
+        /* Add this CSS to your existing stylesheet */
+
+/* Assignment Form Styles */
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #4CAF50;
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+}
+
+.form-group small {
+    display: block;
+    margin-top: 0.25rem;
+    color: #666;
+    font-size: 0.875rem;
+}
+
+/* Button Styles */
+.btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-right: 0.5rem;
+}
+
+.btn-primary {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #45a049;
+    transform: translateY(-2px);
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: #5a6268;
+    transform: translateY(-2px);
+}
+
+.btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+}
+
+/* Submissions Grid */
+.submissions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.submission-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e1e5e9;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.submission-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.submission-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.submission-header h3 {
+    margin: 0;
+    color: #333;
+    font-size: 1.25rem;
+}
+
+/* Status Badges */
+.status {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-submitted {
+    background-color: #e3f2fd;
+    color: #1976d2;
+}
+
+.status-graded {
+    background-color: #e8f5e8;
+    color: #388e3c;
+}
+
+.status-pending {
+    background-color: #fff3e0;
+    color: #f57c00;
+}
+
+.status-late {
+    background-color: #ffebee;
+    color: #d32f2f;
+}
+
+.status-default {
+    background-color: #f5f5f5;
+    color: #666;
+}
+
+.submission-details p {
+    margin: 0.5rem 0;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.submission-details strong {
+    color: #333;
+}
+
+.submission-actions {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #eee;
+}
+
+/* Submission Detail View */
+.submission-detail {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin: 2rem 0;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.detail-item.full-width {
+    grid-column: 1 / -1;
+}
+
+.detail-item label {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+.detail-item span,
+.detail-item p {
+    color: #666;
+    margin: 0;
+}
+
+.grade {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #4CAF50;
+}
+
+.feedback {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    border-left: 4px solid #4CAF50;
+}
+
+.actions {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #eee;
+}
+
+/* No Submissions State */
+.no-submissions {
+    text-align: center;
+    padding: 3rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.no-submissions p {
+    font-size: 1.125rem;
+    color: #666;
+    margin-bottom: 2rem;
+}
+
+/* Loading and Error States */
+.loading,
+.error {
+    text-align: center;
+    padding: 2rem;
+    font-size: 1.125rem;
+}
+
+.loading {
+    color: #666;
+}
+
+.error {
+    color: #d32f2f;
+    background-color: #ffebee;
+    border-radius: 8px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .submissions-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .detail-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .submission-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .submission-header .status {
+        margin-top: 0.5rem;
+    }
+    
+    .btn {
+        margin-bottom: 0.5rem;
+        width: 100%;
+    }
+    
+    .submission-actions {
+        display: flex;
+        flex-direction: column;
+    }
+}
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-content">
+                <div class="logo">🎓 EduChain</div>
+                <ul class="nav-menu">
+                    <li><a href="#" class="nav-link" onclick="showPage('home')">Home</a></li>
+                    <li><a href="#" class="nav-link" onclick="showPage('about')">About</a></li>
+                    <li><a href="#" class="nav-link" onclick="showPage('contact')">Contact</a></li>
+                    <li><a href="#" class="btn btn-primary" id="signinBtn" onclick="showPage('signin')">Sign In</a></li>
+                    <li><a href="#" class="btn btn-secondary hidden" id="logoutBtn" onclick="logout()">Logout</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Landing Page -->
+    <div id="homePage">
+        <section class="hero">
+            <div class="container">
+                <h1>Secure Assignment Management</h1>
+                <p>Blockchain-powered academic integrity with tamper-proof submissions</p>
+                <a href="#" class="btn btn-primary" onclick="showPage('signin')">Get Started</a>
+            </div>
+        </section>
+
+        <section class="features">
+            <div class="container">
+                <h2 style="text-align: center; margin-bottom: 1rem;">Why Choose EduChain?</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">🔒</div>
+                        <h3>Blockchain Security</h3>
+                        <p>Immutable records ensure assignment integrity and prevent tampering</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">⚡</div>
+                        <h3>Instant Verification</h3>
+                        <p>Real-time hash verification for quick and reliable assignment checks</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">👥</div>
+                        <h3>Role-Based Access</h3>
+                        <p>Secure access control for students, lecturers, and administrators</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- About Page -->
+    <div id="aboutPage" class="hidden">
+        <div class="container">
+            <div class="auth-container" style="max-width: 800px; margin-top: 2rem;">
+                <h2>About EduChain</h2>
+                <p>EduChain is a revolutionary blockchain-based assignment management system that ensures academic integrity through cryptographic verification. Our platform provides a secure, transparent, and tamper-proof environment for educational institutions.</p>
+                
+                <h3 style="margin-top: 2rem;">Key Features:</h3>
+                <ul style="margin: 1rem 0; padding-left: 2rem;">
+                    <li>Blockchain-secured file storage with SHA-256 hashing</li>
+                    <li>MetaMask integration for secure transactions</li>
+                    <li>Role-based access control system</li>
+                    <li>Comprehensive audit trail</li>
+                    <li>Duplicate detection and prevention</li>
+                    <li>Excel export functionality for reports</li>
+                </ul>
+
+                <h3 style="margin-top: 2rem;">How It Works:</h3>
+                <p>Students upload assignments through our secure interface. Each file is hashed using SHA-256 and stored on the blockchain, creating an immutable record. Lecturers can verify submissions by comparing blockchain hashes, ensuring authenticity and preventing plagiarism.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contact Page -->
+    <div id="contactPage" class="hidden">
+        <div class="container">
+            <div class="auth-container">
+                <h2>Contact Us</h2>
+                <form onsubmit="submitContact(event)">
+                    <div class="form-group">
+                        <label for="contactName">Name</label>
+                        <input type="text" id="contactName" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="contactEmail">Email</label>
+                        <input type="email" id="contactEmail" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="contactMessage">Message</label>
+                        <textarea id="contactMessage" class="form-input" rows="5" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Send Message</button>
+                </form>
+                
+                <div style="margin-top: 2rem; text-align: center;">
+                    <p><strong>Support Email:</strong> support@educhain.com</p>
+                    <p><strong>Phone:</strong> +1 (555) 123-4567</p>
+                    <p><strong>Office Hours:</strong> Monday - Friday, 9:00 AM - 6:00 PM</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sign In Page -->
+   <div id="signinPage" class="hidden">
+    <div class="container">
+        <div class="auth-container">
+            <h2>Connect Your Wallet</h2>
+            <div class="wallet-status" id="walletStatus">
+                <span>MetaMask: Not Connected</span>
+                <button class="btn btn-primary" id="walletBtn">Connect Wallet</button>
+            </div>
+            <form id="signInForm" class="hidden" onsubmit="login(event)">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label for="userRole">Role</label>
+                    <select id="userRole" class="form-select" required>
+                        <option value="">Select Role</option>
+                        <option value="student">Student</option>
+                        <option value="lecturer">Lecturer</option>
+                        <option value="admin">Administrator</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Sign In</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+    <!-- Dashboard -->
+    <div id="dashboardPage" class="hidden">
+        <div class="container">
+            <div class="dashboard">
+                <div class="dashboard-header">
+                    <div>
+                        <h2 id="dashboardTitle">Dashboard</h2>
+                        <p id="dashboardSubtitle">Welcome back!</p>
+                    </div>
+                    <div>
+                        <span id="userInfo"></span>
+                    </div>
+                </div>
+
+                <!-- Dashboard Navigation -->
+                <div class="dashboard-nav" id="dashboardNav">
+                    <!-- Dynamic navigation based on role -->
+                </div>
+
+                <!-- Dashboard Content -->
+                <div id="dashboardContent">
+                    <!-- Dynamic content based on selected section -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <div id="modalContent">
+                <!-- Dynamic modal content -->
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
